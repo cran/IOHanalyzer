@@ -13,7 +13,8 @@
 #'
 #' @param info A List. Contains a set of in a *.info file.
 #' @param verbose Logical.
-#' @param maximization Logical. Whether the underlying optimization algorithm performs a maximization?
+#' @param maximization Logical. Whether the underlying optimization algorithm performs a maximization? 
+#' Set to NULL to determine automatically based on format
 #' @param format A character. The format of data source, either 'IOHProfiler', 'COCO' or 'TWO_COL"
 #' @param subsampling Logical. Whether *.cdat files are subsampled?
 #' @return A S3 object 'DataSet'
@@ -22,7 +23,7 @@
 #' path <- system.file("extdata", "ONE_PLUS_LAMDA_EA", package="IOHanalyzer")
 #' info <- read_IndexFile(file.path(path,"IOHprofiler_f1_i1.info"))
 #' DataSet(info[[1]])
-DataSet <- function(info, verbose = F, maximization = TRUE, format = IOHprofiler,
+DataSet <- function(info, verbose = F, maximization = NULL, format = IOHprofiler,
                     subsampling = FALSE) {
   if (!is.null(info)) {
     datFile <- info$datafile
@@ -70,13 +71,14 @@ DataSet <- function(info, verbose = F, maximization = TRUE, format = IOHprofiler
     if (format != TWO_COL)
       stopifnot(length(dat) == length(cdat))
 
-    if (format == IOHprofiler || format == TWO_COL)
-      maximization <- TRUE
-    else if (format == COCO)
-      maximization <- FALSE
-
+    if (is.null(maximization)){
+      if (format == IOHprofiler || format == TWO_COL)
+        maximization <- TRUE
+      else if (format == COCO)
+        maximization <- FALSE
+    }
     # RT <- align_by_target(dat, maximization = maximization, format = format) # runtime
-    RT <- align_runtime(dat, format = format)
+    RT <- align_runtime(dat, format = format, maximization = maximization)
 
     #TODO: check if this works correctly without CDAT-file
     if (format == TWO_COL)
@@ -409,13 +411,23 @@ get_FV_overview.DataSet <- function(ds, ...) {
 #' @export
 #'
 get_RT_overview.DataSet <- function(ds, ...) {
-  data <- ds$RT
-  runs <- ncol(data)
-  budget <- max(attr(ds, 'maxRT'))
-
-  min_rt <- min(data, na.rm = T)
-  max_rt <- max(data, na.rm = T)
-
+  
+  if(!is.null(attr(ds, "format")) && attr(ds, "format") == NEVERGRAD){
+    data <- ds$FV
+    budget <- max(attr(ds, 'maxRT'))
+    runs <- ncol(data)
+    min_rt <- rownames(data) %>% as.integer %>% min
+    max_rt <- budget
+  }
+  
+  else{
+    data <- ds$RT
+    runs <- ncol(data)
+    budget <- max(attr(ds, 'maxRT'))
+    min_rt <- min(data, na.rm = T)
+    max_rt <- max(data, na.rm = T)
+  }
+  
   data.table(algId = attr(ds, 'algId'),
              DIM = attr(ds, 'DIM'),
              funcId = attr(ds, 'funcId'),
@@ -493,7 +505,7 @@ get_RT_summary.DataSet <- function(ds, ftarget, ...) {
 
   if (1 < 2) {
     data <- data[matched, , drop = FALSE]
-    apply(data, 1, D_quantile) %>%
+    apply(data, 1, IOHanalyzer_env$D_quantile) %>%
       t %>%
       as.data.table %>%
       cbind(as.data.table(SP(data, maxRT))) %>%
@@ -502,7 +514,7 @@ get_RT_summary.DataSet <- function(ds, ftarget, ...) {
             apply(data, 1, .median),
             apply(data, 1, .sd), .) %>%
       set_colnames(c('algId', 'target', 'mean', 'median',
-                     'sd', paste0(probs * 100, '%'), 'ERT', 'runs', 'ps'))
+                     'sd', paste0(getOption("IOHanalyzer.quantiles") * 100, '%'), 'ERT', 'runs', 'ps'))
   } else {# TODO: remove this case, deprecated...
     NAs <- is.na(matched)
     if (any(NAs)) {
@@ -574,14 +586,14 @@ get_FV_summary.DataSet <- function(ds, runtime, ...) {
   })
 
   data <- data[matched, , drop = FALSE]
-  apply(data, 1, C_quantile) %>%
+  apply(data, 1, IOHanalyzer_env$C_quantile) %>%
     t %>%
     as.data.table %>%
     cbind(algId, runtime, NC,
           apply(data, 1, .mean),
           apply(data, 1, .median),
           apply(data, 1, .sd), .) %>%
-    set_colnames(c('algId', 'runtime', 'runs', 'mean', 'median', 'sd', paste0(probs * 100, '%')))
+    set_colnames(c('algId', 'runtime', 'runs', 'mean', 'median', 'sd', paste0(getOption("IOHanalyzer.quantiles") * 100, '%')))
 }
 
 #' @rdname get_FV_sample
@@ -654,7 +666,7 @@ get_PAR_summary.DataSet <- function(ds, ftarget, parId = 'all', ...) {
   lapply(par_name,
          function(par) {
            data <- ds[[par]][matched, , drop = FALSE]
-           apply(data, 1, C_quantile) %>%
+           apply(data, 1, IOHanalyzer_env$C_quantile) %>%
              t %>%
              as.data.table %>%
              cbind(algId, par, ftarget,
@@ -663,7 +675,7 @@ get_PAR_summary.DataSet <- function(ds, ftarget, parId = 'all', ...) {
                    apply(data, 1, .median),
                    apply(data, 1, .sd), .) %>%
              set_colnames(c('algId', 'parId', 'target', 'runs', 'mean', 'median', 'sd',
-                            paste0(probs * 100, '%')))
+                            paste0(getOption("IOHanalyzer.quantiles") * 100, '%')))
          }) %>%
     rbindlist
 }

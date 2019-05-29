@@ -62,15 +62,21 @@ selected_folders <- reactive({
     for (i in seq(datapath)) {
       filetype <- sub('[^\\.]*\\.', '', basename(datapath[i]), perl = T)
 
+      if (filetype == 'csv'){
+        folders[i] <- datapath[[i]]
+        next
+      }
+      
       if (filetype == 'zip')
         unzip_fct <- unzip
       else if (filetype %in% c('bz2', 'bz', 'gz', 'tar', 'tgz', 'tar.gz', 'xz'))
         unzip_fct <- untar
-      else {
+      else{
         shinyjs::alert("This filetype is not (yet) supported.\n 
                         Please use a different format. \n
-                        We support the following formats: \n 
-                       'zip', 'bz2', 'bz', 'gz', 'tar', 'tgz', 'tar.gz' and 'xz'.")
+                        We support the following compression formats: \n 
+                       'zip', 'bz2', 'bz', 'gz', 'tar', 'tgz', 'tar.gz' and 'xz'.\n
+                       We also have limited support for csv-files (in Nevergrad format).")
         return(NULL)
       }
       if (filetype == 'zip')
@@ -81,8 +87,13 @@ selected_folders <- reactive({
       idx <- grep('*.info', files)[1]
       info <- files[idx]
 
-      if (is.null(info)) return(NULL)
-
+      if (is.null(info)){
+        idx <- grep('*.csv', files)[1]
+        info <- files[idx]
+        if (is.null(info))
+          return(NULL)
+      }
+      
       if (basename(info) == info) {
         folder <- Sys.time()  # generate a folder name here
         .exdir <- file.path(exdir, folder)
@@ -120,20 +131,44 @@ observeEvent(selected_folders(), {
                      format_detected,
                      'is detected in the uploaded data set... skip the uploaded data'))
 
-  else
-    format <<- format_detected   # set the global data format
-
+  else {
+    if (format_detected == IOHprofiler && format_selected == TWO_COL){
+      format <<- TWO_COL
+    }
+    else
+      format <<- format_detected   # set the global data format
+  }
+  if (format == NEVERGRAD){
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "RT_ECDF"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "ERT_convergence"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "ERT_data"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "ERT"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "RT_PMF"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "PARAMETER"))
+    
+    
+  }
+  else{
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "RT_ECDF"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "ERT_convergence"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "ERT_data"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "ERT"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "RT_PMF"))
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "PARAMETER"))
+  }
+  
+  
   for (folder in folder_new) {
     indexFiles <- scan_IndexFile(folder)
 
-    if (length(indexFiles) == 0)
+    if (length(indexFiles) == 0 && format != NEVERGRAD)
       print_html(paste('<p style="color:red;">format', format_selected,
                        'is selected, however', format_detected,
                        'is detected...<br>using the detected one...</p>'))
     else {
       folderList$data <- c(folderList$data, folder)
 
-      if (format_selected == AUTOMATIC) {
+      if (format_selected == AUTOMATIC || (format_detected == IOHprofiler && format_selected == TWO_COL)) {
         set_format_func(format)
       } else if (format_detected != format) {
         print_html(paste('<p style="color:red;">format', format_selected,
@@ -142,9 +177,10 @@ observeEvent(selected_folders(), {
       }
 
       if (maximization == AUTOMATIC)
-        maximization <- ifelse((format == COCO || format == BIBOJ_COCO), FALSE, TRUE)
+        maximization <- ifelse((format == COCO || format == BIBOJ_COCO || format == NEVERGRAD)
+                               , FALSE, TRUE)
       else
-        maximization <- ifelse((maximization == "MAXIMIZE"), TRUE, FALSE)
+        maximization <- ifelse((maximization == "MAXIMIZE" || maximization == TRUE), TRUE, FALSE)
 
       # read the data set and handle potential errors
       new_data <- tryCatch(
@@ -197,26 +233,47 @@ observe({
   # TODO: create reactive values for them
   algIds_ <- get_algId(data)
   algIds <- c(algIds_, 'all')
-  parIds <- c(get_parId(data), 'all')
+  parIds_ <- get_parId(data)
+  parIds <- c(parIds_, 'all')
   funcIds <- get_funcId(data)
   DIMs <- get_dim(data)
 
-  updateSelectInput(session, 'Overall.Dim', choices = DIMs, selected = DIMs[1])
-  updateSelectInput(session, 'Overall.Funcid', choices = funcIds, selected = funcIds[1])
+  selected_ds <- data[[1]]
+  selected_f <- attr(selected_ds,'funcId')
+  selected_dim <- attr(selected_ds, 'DIM')
+  selected_alg <- attr(selected_ds, 'algId')
+  
+  updateSelectInput(session, 'Overall.Dim', choices = DIMs, selected = selected_dim)
+  updateSelectInput(session, 'Overall.Funcid', choices = funcIds, selected = selected_f)
   updateSelectInput(session, 'RTSummary.Statistics.Algid', choices = algIds, selected = 'all')
   updateSelectInput(session, 'RTSummary.Overview.Algid', choices = algIds, selected = 'all')
   updateSelectInput(session, 'FCESummary.Overview.Algid', choices = algIds, selected = 'all')
   updateSelectInput(session, 'RTSummary.Sample.Algid', choices = algIds, selected = 'all')
-  updateSelectInput(session, 'PAR.Plot.Algid', choices = algIds, selected = 'all')
+  updateSelectInput(session, 'PAR.Plot.Algs', choices = algIds_, selected = algIds_)
   updateSelectInput(session, 'FCESummary.Statistics.Algid', choices = algIds, selected = 'all')
   updateSelectInput(session, 'FCESummary.Sample.Algid', choices = algIds, selected = 'all')
   updateSelectInput(session, 'PAR.Summary.Algid', choices = algIds, selected = 'all')
   updateSelectInput(session, 'PAR.Sample.Algid', choices = algIds, selected = 'all')
-  updateSelectInput(session, 'ERTPlot.Multi.Algs', choices = algIds_, selected = algIds_[1])
+  updateSelectInput(session, 'ERTPlot.Multi.Algs', choices = algIds_, selected = selected_alg)
   updateSelectInput(session, 'ERTPlot.Algs', choices = algIds_, selected = algIds_)
-  updateSelectInput(session, 'FCEPlot.Multi.Algs', choices = algIds_, selected = algIds_[1])
+  updateSelectInput(session, 'ERTPlot.Aggr.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FCEPlot.Multi.Algs', choices = algIds_, selected = selected_alg)
+  updateSelectInput(session, 'FCEPlot.Aggr.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FCEPlot.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FCEPDF.Bar.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FCEPDF.Hist.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RTPMF.Bar.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RTPMF.Hist.Algs', choices = algIds_, selected = algIds_)
   updateSelectInput(session, 'PAR.Summary.Param', choices = parIds, selected = 'all')
   updateSelectInput(session, 'PAR.Sample.Param', choices = parIds, selected = 'all')
+  updateSelectInput(session, 'RTECDF.Single.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RTECDF.Aggr.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RTECDF.AUC.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RTECDF.Multi.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FCEECDF.Single.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FCEECDF.Mult.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FCEECDF.AUC.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'PAR.Plot.Params', choices = parIds_, selected = parIds_)
 })
 
 # update (filter) according to users selection DataSets
@@ -226,7 +283,11 @@ DATA <- reactive({
 
   if (length(DataList$data) == 0) return(NULL)
 
-  subset(DataList$data, DIM == dim, funcId == id)
+  d <- subset(DataList$data, DIM == dim, funcId == id)
+  if (length(d) == 0 && dim != "" && id != ""){
+    showNotification("There is no data available for this (dimension,function)-pair")
+  }
+  d
 })
 
 # TODO: give a different name for DATA and DATA_RAW
@@ -337,10 +398,9 @@ observe({
   if (length(v) == 0) return()
 
   # TODO: this part should be made generic!!!
-  v <- as.integer(v)
   q <- quantile(v, probs = c(.25, .5, .75), names = F, type = 3)
 
-  grid <- seq(min(v), max(v), length.out = 10) %>% as.integer
+  grid <- seq(min(v), max(v), length.out = 10)
   step <- max(1, min(grid[-1] - grid[-length(grid)]))
 
   start <- min(v)

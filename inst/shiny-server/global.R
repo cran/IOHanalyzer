@@ -7,11 +7,16 @@ suppressMessages(library(dplyr))
 suppressMessages(library(plotly))
 suppressMessages(library(shinydashboard))
 suppressMessages(library(xtable))
+suppressMessages(library(colourpicker))
+# suppressMessages(library(dashboardthemes))
+suppressMessages(library(bsplus))
+suppressMessages(library(DT))
 
 # global options
 options(datatable.print.nrows = 20)
 options(width = 80)
-options(shiny.maxRequestSize = 200 * 1024 ^ 2)   # maximal number of requests, this is too many...
+# maximal number of requests, this is too many...
+options(shiny.maxRequestSize = 200 * 1024 ^ 2)   
 
 # for customized 'plotlyOutput' function -----
 widget_html <- function(name, package, id, style, class, inline = FALSE, ...) {
@@ -65,7 +70,7 @@ plotlyOutput.IOHanalyzer <- function(outputId, width = '100%', aspect_ratio = 16
                                 else ""), 
                 width = width, height = 0)
   )
-  dependencies = widget_dependencies('plotly', 'plotly')
+  dependencies <- widget_dependencies('plotly', 'plotly')
   htmltools::attachDependencies(html, dependencies)
 }
 
@@ -75,11 +80,11 @@ symbols <- c("circle-open", "diamond-open", "square-open", "cross-open",
 
 # ploting settings for UI ---------------------
 # TODO: those should be deprecated. Verify and delete those
-aspect_ratio <-  4 / 3
-fig_height <- 1100
-fig_height2 <- 1100
-fig_width <- fig_height * aspect_ratio
-fig_width2 <- fig_height * (16 / 10)
+# aspect_ratio <-  4 / 3
+# fig_height <- 1100
+# fig_height2 <- 1100
+# fig_width <- fig_height * aspect_ratio
+# fig_width2 <- fig_height * (16 / 10)
 
 plotly_height <- "auto"
 plotly_width <- "auto"
@@ -91,6 +96,7 @@ COCO <- 'COCO'
 TWO_COL <- 'TWO_COL'
 AUTOMATIC <- 'AUTOMATIC'
 BIBOJ_COCO <- 'BIBOJ_COCO'
+NEVERGRAD <- 'NEVERGRAD'
 
 # directory where rds-data is stored
 get_repo_location <- function() {
@@ -120,7 +126,7 @@ PAR_csv_name <- parse(text = "paste0('PARSummary-', paste0(input$Overall.Dim, 'D
 PARSample_csv_name <- parse(text = "paste0('PARSample-', paste0(input$Overall.Dim, 'D'),
                              paste0('F', input$Overall.Funcid), '.', input$PAR.Sample.FileFormat)")
 
-max_samples <- 100
+# max_samples <- 100
 
 FIG_NAME_ERT_PER_FUN <- parse(text = "paste0('ERT-', Sys.Date(), '.', input$ERTPlot.Format)")
 FIG_NAME_ERT_PER_FUN_MULTI <- parse(text = "paste0('ERT_Mult-', Sys.Date(), '.', input$ERTPlot.Multi.Format)")

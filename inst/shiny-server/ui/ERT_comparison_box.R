@@ -5,6 +5,14 @@ ERT_comparison_box <- function(width = 12, collapsible = T, collapsed = T) {
       sidebarLayout(
         sidebarPanel(
             width = 2,
+            selectInput('ERTPlot.Aggr.Algs', label = 'Select which algorithms to plot:',
+                        multiple = T, selected = NULL, choices = NULL) %>% shinyInput_label_embed(
+                          custom_icon() %>%
+                            bs_embed_popover(
+                              title = "Algorithm selection", content = alg_select_info, 
+                              placement = "auto"
+                            )
+                        ),
             selectInput('ERTPlot.Aggr.Mode', label = 'Select the plotting mode',
                         choices = c('radar', 'line'), selected = 'radar'),
             
@@ -13,7 +21,7 @@ ERT_comparison_box <- function(width = 12, collapsible = T, collapsed = T) {
                           value = T),
             
             checkboxInput('ERTPlot.Aggr.Logy', 
-                          label = 'scale y axis log10',
+                          label = 'Scale y axis \\(\\log_{10}\\)',
                           value = F),
             
             selectInput('ERTPlot.Aggr.Format', label = 'Select the figure format',

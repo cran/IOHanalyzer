@@ -9,16 +9,19 @@ output$RTPMF.Bar.Download <- downloadHandler(
   },
   content = function(file) {
     save_plotly(render_RT_PMF(), file,
-                format = input$RTPMF.Bar.Format,
-                width = fig_width2, height = fig_height)
+                format = input$RTPMF.Bar.Format)
   },
   contentType = paste0('image/', input$RTPMF.Bar.Format)
 )
 
 render_RT_PMF <- reactive({
+  withProgress({
   ftarget <- input$RTPMF.Bar.Target %>% as.numeric
-  Plot.RT.PMF(DATA(), ftarget, show.sample = input$RTPMF.Bar.Sample,
+  data <- subset(DATA(), algId %in% input$RTPMF.Bar.Algs)
+  Plot.RT.PMF(data, ftarget, show.sample = input$RTPMF.Bar.Sample,
               scale.ylog = input$RTPMF.Bar.Logy)
+  },
+  message = "Creating plot")
 })
 
 # historgram of the running time
@@ -33,17 +36,21 @@ output$RTPMF.Hist.Download <- downloadHandler(
   },
   content = function(file) {
     save_plotly(render_RT_HIST(), file,
-                format = input$RTPMF.Hist.Format,
-                width = fig_width2, height = fig_height2)
+                format = input$RTPMF.Hist.Format)
   },
   contentType = paste0('image/', input$RTPMF.Hist.Format)
 )
 
 render_RT_HIST <- reactive({
   req(input$RTPMF.Hist.Target)
+  withProgress({
   ftarget <- format_FV(input$RTPMF.Hist.Target) %>% as.numeric
   plot_mode <- input$RTPMF.Hist.Mode
 
   # TODO: remove 'DataSetList' in the future
-  Plot.RT.Histogram(DATA(), ftarget, plot_mode = plot_mode)
+  data <- subset(DATA(), algId %in% input$RTPMF.Hist.Algs)
+  
+  Plot.RT.Histogram(data, ftarget, plot_mode = plot_mode, use.equal.bins = input$RTPMF.Hist.Equal)
+  },
+  message = "Creating plot")
 })

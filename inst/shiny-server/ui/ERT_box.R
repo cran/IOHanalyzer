@@ -8,7 +8,13 @@ ERT_box <- function(width = 12, collapsible = T, collapsed = T) {
           HTML('<p style="font-size:120%;">Range of the displayed target values</p>'),
 
           selectInput('ERTPlot.Algs', label = 'Select which algorithms to plot:',
-                      multiple = T, selected = NULL, choices = NULL),
+                      multiple = T, selected = NULL, choices = NULL) %>% shinyInput_label_embed(
+                        custom_icon() %>%
+                          bs_embed_popover(
+                            title = "Algorithm selection", content = alg_select_info, 
+                            placement = "auto"
+                          )
+                      ),
 
           textInput('ERTPlot.Min',
                     label = F_MIN_LABEL,
@@ -18,33 +24,33 @@ ERT_box <- function(width = 12, collapsible = T, collapsed = T) {
                     value = ''),
 
           checkboxInput('ERTPlot.show.ERT',
-                        label = 'show/hide ERT',
+                        label = 'Show/hide ERT',
                         value = T),
 
           checkboxInput('ERTPlot.show.mean',
-                        label = 'show/hide mean',
+                        label = 'Show/hide mean',
                         value = F),
 
           checkboxInput('ERTPlot.show.CI',
-                        label = 'show/hide mean +/- sd',
+                        label = 'Show/hide mean +/- sd',
                         value = F),
 
           checkboxInput('ERTPlot.show.median',
-                        label = 'show/hide median',
+                        label = 'Show/hide median',
                         value = F),
 
           checkboxInput('ERTPlot.semilogx',
-                        label = 'scale x axis log10',
+                        label = 'Scale x axis \\(\\log_{10}\\)',
                         value = T),
 
           checkboxInput('ERTPlot.semilogy',
-                        label = 'scale y axis log10',
+                        label = 'Scale y axis \\(\\log_{10}\\)',
                         value = T),
 
-          selectInput('ERTPlot.Format', label = 'select the figure format',
+          selectInput('ERTPlot.Format', label = 'Select the figure format',
                       choices = supported_fig_format, selected = 'pdf'),
 
-          downloadButton('ERTPlot.Download', label = 'download the figure')
+          downloadButton('ERTPlot.Download', label = 'Download the figure')
 
         ),
 
@@ -53,10 +59,9 @@ ERT_box <- function(width = 12, collapsible = T, collapsed = T) {
           column(
             width = 12,
             align = "center",
-            HTML_P('The <b><i>mean, median
-                 and standard deviation</i></b> of the runtime samples
+            HTML_P('The <b><i>mean, median, standard deviation and ERT</i></b> of the runtime samples
                  are depicted against the best objective values.
-                 The displayed elements (mean, median, standard deviations)
+                 The displayed elements (mean, median, standard deviations and ERT)
                  can be switched on and off by clicking on the legend on the right.
                  A <b>tooltip</b> and <b>toolbar</b> appears when hovering over the figure.'),
             plotlyOutput.IOHanalyzer('ERT_PER_FUN')

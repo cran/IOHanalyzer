@@ -13,60 +13,99 @@ f2 <- list(
 )
 
 # font No. 3...
-f3 <- list(
-  family = 'Old Standard TT, serif',
-  size = 16,
-  color = 'black'
-)
+f3 <- function() {
+  list(
+    family = 'Old Standard TT, serif',
+    size = getOption("IOHanalyzer.tick_fontsize", default = 16), 
+    color = 'black'
+  )
+}
 
-legend_right <- list(x = 1.01, y = 0.9, orientation = 'v',
-                     font = list(size = 13, family = 'Old Standard TT, serif'))
+legend_right <- function(){
+  list(x = 1.01, y = 0.9, orientation = 'v',
+       font = list(size = getOption("IOHanalyzer.legend_fontsize", default = 16), 
+                   family = 'Old Standard TT, serif'))
+}
 
-legend_inside <- list(x = .01, y = 1, orientation = 'v',
-                      bgcolor = 'rgba(255, 255, 255, 0)',
-                      bordercolor = 'rgba(255, 255, 255, 0)',
-                      font = list(size = 16, family = 'Old Standard TT, serif'))
+legend_inside <- function () {
+  list(x = .01, y = 1, orientation = 'v',
+       bgcolor = 'rgba(255, 255, 255, 0.5)',
+       bordercolor = 'rgba(255, 255, 255, 0.8)',
+       font = list(size = getOption("IOHanalyzer.legend_fontsize", default = 16), 
+                   family = 'Old Standard TT, serif'))
+}
 
-legend_inside2 <- list(x = 0.7, y = 0.1, orientation = 'v',
-                      bgcolor = 'rgba(255, 255, 255, 0)',
-                      bordercolor = 'rgba(255, 255, 255, 0)',
-                      font = list(size = 16, family = 'Old Standard TT, serif'))
+legend_inside2 <- function() { 
+  list(x = 0.7, y = 0.1, orientation = 'v',
+       bgcolor = 'rgba(255, 255, 255, 0.5)',
+       bordercolor = 'rgba(255, 255, 255, 0.8)',
+       font = list(size = getOption("IOHanalyzer.legend_fontsize", default = 16), 
+                  family = 'Old Standard TT, serif'))
+}
+
+legend_below <- function() { 
+  list(orientation = 'h',
+       font = list(size = getOption("IOHanalyzer.legend_fontsize", default = 16), 
+                   family = 'Old Standard TT, serif'))
+}
+
+legend_location <- function(){
+  opt <- getOption('IOHanalyzer.legend_location', default = 'outside_right')
+  if (opt == 'outside_right') return(legend_right())
+  else if (opt == 'inside_left') return(legend_inside())
+  else if (opt == 'inside_right') return(legend_inside2())
+  else if (opt == 'below') return(legend_below())
+  else warning("The selected legend option is not implemented")
+}
 
 # TODO: create font object as above for title, axis...
-plot_ly_default <- function(title = NULL, x.title = NULL, y.title = NULL) {
+
+#' Template for creating plots in the IOHanalyzer-style
+#' 
+#' @param title Title for the plot
+#' @param x.title X-axis label
+#' @param y.title Y-axis label
+#' 
+#' @export
+#' @examples 
+#' IOH_plot_ly_default("Example plot","x-axis","y-axis") 
+IOH_plot_ly_default <- function(title = NULL, x.title = NULL, y.title = NULL) {
   plot_ly() %>%
     layout(title = list(text = title, 
-                        font = list(size = 16, family = 'Old Standard TT, serif')),
+                        font = list(size = getOption("IOHanalyzer.title_fontsize", default = 16),
+                                    family = 'Old Standard TT, serif')),
            autosize = T, hovermode = 'compare',
-           legend = legend_right,
-           paper_bgcolor = 'rgb(255,255,255)', plot_bgcolor = 'rgb(229,229,229)',
-           font = list(size = 16, family = 'Old Standard TT, serif'),
+           legend = legend_location(),
+           paper_bgcolor = 'rgb(255,255,255)',
+           plot_bgcolor = getOption('IOHanalyzer.bgcolor'),
+           font = list(size = getOption("IOHanalyzer.label_fontsize", default = 16),
+                       family = 'Old Standard TT, serif'),
            autosize = T,
            showlegend = T, 
            xaxis = list(
                         # title = list(text = x.title, font = f3),
                         title = x.title,
-                        gridcolor = 'rgb(255,255,255)',
+                        gridcolor = getOption('IOHanalyzer.gridcolor'),
                         showgrid = TRUE,
                         showline = FALSE,
                         showticklabels = TRUE,
-                        tickcolor = 'rgb(127,127,127)',
+                        tickcolor = getOption('IOHanalyzer.tickcolor'),
                         ticks = 'outside',
                         ticklen = 9,
-                        tickfont = f3,
+                        tickfont = f3(),
                         exponentformat = 'E',
                         zeroline = F),
            yaxis = list(
                         # title = list(text = y.title, font = f3),
                         title = y.title,
-                        gridcolor = 'rgb(255,255,255)',
+                        gridcolor = getOption('IOHanalyzer.gridcolor'),
                         showgrid = TRUE,
                         showline = FALSE,
                         showticklabels = TRUE,
-                        tickcolor = 'rgb(127,127,127)',
+                        tickcolor = getOption('IOHanalyzer.tickcolor'),
                         ticks = 'outside',
                         ticklen = 9,
-                        tickfont = f3,
+                        tickfont = f3(),
                         exponentformat = 'E',
                         zeroline = F))
 }
@@ -115,6 +154,7 @@ gg_beanplot <- function(mapping, data, p = NULL, width = 3, fill = 'grey',
   p
 }
 
+
 Set1 <- function(n) colorspace::sequential_hcl(n, h = c(360, 40), c. = c(100, NA, 90), l = c(28, 90),
                                    power = c(1, 1.1), gamma = NULL, fixup = TRUE,
                                    alpha = 1)#, palette = NULL, rev = FALSE)
@@ -127,9 +167,54 @@ Set3 <- function(n) colorspace::sequential_hcl(n, c(-88, 59), c. = c(60, 75, 55)
                                    power = c(0.1, 1.2), gamma = NULL,
                                    fixup = TRUE, alpha = 1)#, palette = NULL, rev = FALSE)
 
+IOHanalyzer_env$used_colorscheme <- Set3
+
+#' Set the colorScheme of the IOHanalyzer plots
+#' 
+#' @param schemename Three default colorschemes are implemented:
+#' \itemize{
+#' \item Default
+#' \item Variant 1
+#' \item Variant 2
+#' }
+#' And it is also possible to select "Custom", which allows uploading of a custom set of colors
+#' @param path The path to the file containing the colors to use. Only used if 
+#' schemename is "Custom"
+#' 
+#' @export
+#' 
+#' @examples
+#' set_color_scheme("Default")
+set_color_scheme <- function(schemename, path = NULL){
+  if (schemename == "Default") IOHanalyzer_env$used_colorscheme <- Set3
+  else if (schemename == "Variant 1") IOHanalyzer_env$used_colorscheme <- Set2
+  else if (schemename == "Variant 2") IOHanalyzer_env$used_colorscheme <- Set1
+  else if (schemename == "Custom" && !is.null(path)) {
+    colors <- fread(path, header = F)[[1]]
+    N <- length(colors)
+    custom_set <- function(n) {
+      return(colors[mod(seq(n), N) + 1])
+    }
+    IOHanalyzer_env$used_colorscheme <- custom_set
+  } 
+}
+
+#' Get colors according to the current colorScheme of the IOHanalyzer
+#' 
+#' @param n Number of colors to get
+#' 
+#' @export
+#' 
+#' @examples
+#' get_color_scheme(5)
+get_color_scheme <- function(n){
+  IOHanalyzer_env$used_colorscheme(n)
+}
+
 # TODO: incoporate more colors
 color_palettes <- function(ncolor) {
-  if (ncolor < 5) return(Set3(ncolor)) #Was set2, which gave NAFF as color?
+  # TODO: FIX IT!
+  if (ncolor < 5) return(IOHanalyzer_env$used_colorscheme(ncolor))
 
   brewer <- function(n) {
     colors <- RColorBrewer::brewer.pal(n, 'Spectral')
@@ -137,7 +222,7 @@ color_palettes <- function(ncolor) {
     colors
   }
 
-  color_fcts <- c(colorRamps::primary.colors, Set3)
+  color_fcts <- c(colorRamps::primary.colors, IOHanalyzer_env$used_colorscheme)
 
   n <- min(11, ncolor)
   colors <- brewer(n)
@@ -181,20 +266,23 @@ save_plotly <- function(p, file, format = 'svg', ...) {
   file <- basename(file)
   
   pwd <- tempdir()
+  width <- getOption("IOHanalyzer.figure_width", default = NULL)
+  height <- getOption("IOHanalyzer.figure_height", default = NULL)
   
   if (format %in% c('svg', 'png'))
-    withr::with_dir(pwd, orca(p, file, format = format, ...))
+    withr::with_dir(pwd, orca(p, file, format = format, width = width, height = height, ...))
   else {
     file_svg <- paste0(file, '.svg')
-    withr::with_dir(pwd, orca(p, file_svg, format = 'svg', ...))
+    withr::with_dir(pwd, orca(p, file_svg, format = 'svg', width = width, height = height, ...))
     invisible(
       system(
-        paste('inkscape', file.path(pwd,file_svg), paste0('--export-', format, '=', file.path(pwd,file))),
+        paste(
+          'inkscape', file.path(pwd,file_svg),
+          paste0('--export-', format, ' ', file.path(pwd, file))
+        ),
         intern = T
       )
     )
-    # file.remove(file.path(pwd,file_svg))
   }
-  
   file.rename(file.path(pwd, file), file.path(des, file))
 }

@@ -1,9 +1,13 @@
 # empirical p.d.f. of the target value
 render_FV_PDF <- reactive({
-  req(input$FCEPDF.Bar.Runtime)
-  runtime <- input$FCEPDF.Bar.Runtime %>% as.integer
-  Plot.FV.PDF(DATA(), runtime, show.sample = input$FCEPDF.Bar.Samples,
+  req(input$FCEPDF.Bar.Runtime, length(DATA()) > 0)
+  withProgress({
+  runtime <- input$FCEPDF.Bar.Runtime %>% as.numeric
+  data <- subset(DATA(), algId %in% input$FCEPDF.Bar.Algs)
+  Plot.FV.PDF(data, runtime, show.sample = input$FCEPDF.Bar.Samples,
               scale.ylog = input$FCEPDF.Bar.Logy )
+  },
+  message = "Creating plot")
 })
 
 output$FCEPDF.Bar.Download <- downloadHandler(
@@ -12,8 +16,7 @@ output$FCEPDF.Bar.Download <- downloadHandler(
   },
   content = function(file) {
     save_plotly(render_FV_PDF(), file,
-                format = input$FCEPDF.Bar.Format,
-                width = fig_width2, height = fig_height)
+                format = input$FCEPDF.Bar.Format)
   },
   contentType = paste0('image/', input$FCEPDF.Bar.Format)
 )
@@ -24,9 +27,13 @@ output$FCE_PDF <- renderPlotly({
 
 # historgram of the target values -----------
 render_FV_HIST <- reactive({
-  req(input$FCEPDF.Hist.Runtime != "")   # require non-empty input
-  runtime <- input$FCEPDF.Hist.Runtime %>% as.integer
-  Plot.FV.Histogram(DATA(), runtime, plot_mode = input$FCEPDF.Hist.Mode)
+  req(input$FCEPDF.Hist.Runtime != "", length(DATA()) > 0)   # require non-empty input
+  withProgress({
+  runtime <- input$FCEPDF.Hist.Runtime %>% as.numeric
+  data <- subset(DATA(), algId %in% input$FCEPDF.Hist.Algs)
+  Plot.FV.Histogram(data, runtime, plot_mode = input$FCEPDF.Hist.Mode, use.equal.bins = input$FCEPDF.Hist.Equal)
+  },
+  message = "Creating plot")
 })
 
 output$FCEPDF.Hist.Download <- downloadHandler(
@@ -35,8 +42,7 @@ output$FCEPDF.Hist.Download <- downloadHandler(
   },
   content = function(file) {
     save_plotly(render_FV_HIST(), file,
-                format = input$FCEPDF.Hist.Format,
-                width = fig_width2, height = fig_height2)
+                format = input$FCEPDF.Hist.Format)
   },
   contentType = paste0('image/', input$FCEPDF.Hist.Format)
 )

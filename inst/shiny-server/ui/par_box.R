@@ -9,23 +9,30 @@ par_expected_value_box <- function(width = 12, collapsible = T, collapsed = T) {
 
       textInput('PAR.Plot.Min', label = F_MIN_LABEL, value = ''),
       textInput('PAR.Plot.Max', label = F_MAX_LABEL, value = ''),
-
-      selectInput('PAR.Plot.Algid', 'Algorithms', choices = NULL, selected = NULL),
-      selectInput('PAR.Plot.show.mean', label = 'mean/median',
+      selectInput('PAR.Plot.Params', 'Parameters', choices = NULL, selected = NULL, multiple = T),
+      
+      selectInput('PAR.Plot.Algs', 'Select which algorithms to plot:', choices = NULL, selected = NULL, multiple = T) %>% shinyInput_label_embed(
+        custom_icon() %>%
+          bs_embed_popover(
+            title = "Algorithm selection", content = alg_select_info, 
+            placement = "auto"
+          )
+      ),
+      selectInput('PAR.Plot.show.mean', label = 'Mean/median',
                   choices = c('mean', 'median'),
                   selected = 'mean'),
-
+      checkboxInput('PAR.Plot.CI', "Show standard deviations", value = T),
       checkboxInput('PAR.Plot.Logx',
-                    label = 'scale x axis log10',
+                    label = 'Scale x axis \\(\\log_{10}\\)',
                     value = T),
 
       checkboxInput('PAR.Plot.Logy',
-                    label = 'scale y axis log10',
+                    label = 'Scale y axis \\(\\log_{10}\\)',
                     value = T),
 
-      selectInput('PAR.Plot.Format', label = 'select the figure format',
+      selectInput('PAR.Plot.Format', label = 'Select the figure format',
                   choices = supported_fig_format, selected = 'pdf'),
-      downloadButton('PAR.Plot.Download', label = 'download the figure')
+      downloadButton('PAR.Plot.Download', label = 'Download the figure')
     ),
 
     mainPanel(
@@ -68,7 +75,7 @@ par_summary_box <- function(width = 12, collapsible = T, collapsed = T) {
       width = 9,
       HTML(paste0('<div style="font-size:120%;">',
                   includeMarkdown('RMD/PAR_SUMMARY_TABLE.Rmd'), '</div>')),
-      tableOutput('table_PAR_summary')
+      DT::dataTableOutput('table_PAR_summary')
     )
   )
 }
@@ -102,7 +109,7 @@ par_sample_box <- function(width = 12, collapsible = T, collapsed = T) {
       HTML('<p style="font-size:120%;">This table shows for each selected algorithm \\(A\\),
            each selected target value \\(f(x)\\), and each run \\(r\\) the parameter value
            observed when the target value \\(f(x)\\) is reached for the first time.</p>'),
-      dataTableOutput('table_PAR_SAMPLE')
+      DT::dataTableOutput('table_PAR_SAMPLE')
     )
   )
 }

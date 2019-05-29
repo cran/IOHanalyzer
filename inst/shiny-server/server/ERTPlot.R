@@ -10,132 +10,21 @@ output$ERTPlot.Download <- downloadHandler(
   },
   content = function(file) {
     save_plotly(render_ert_per_fct(), file,
-                format = input$ERTPlot.Format,
-                width = fig_width2, height = fig_height)
+                format = input$ERTPlot.Format)
   },
   contentType = paste0('image/', input$ERTPlot.Format)
 )
 
 update_ert_per_fct_axis <- observe({
   plotlyProxy("ERT_PER_FUN", session) %>%
-    plotlyProxyInvoke("relayout", list(xaxis = list(type = ifelse(input$ERTPlot.semilogx, 'log', 'linear')),
-                                       yaxis = list(type = ifelse(input$ERTPlot.semilogy, 'log', 'linear'))))
+    plotlyProxyInvoke("relayout", list(xaxis = list(title = 'best-so-far-f(x)-value', type = ifelse(input$ERTPlot.semilogx, 'log', 'linear')),
+                                       yaxis = list(title = 'function evaluations', type = ifelse(input$ERTPlot.semilogy, 'log', 'linear'))))
 })
-
-# ert_per_fct_data <- reactive({
-#   req(input$ERTPlot.Min, input$ERTPlot.Max, DATA())
-#   dsList <- DATA()
-#   Fall <- get_funvals(dsList)
-#
-#   Fseq <- seq_FV(Fall, as.numeric(input$ERTPlot.Min), as.numeric(input$ERTPlot.Max), length.out = 60,
-#                  scale = ifelse(isolate(input$ERTPlot.semilogx), 'log', 'linear'))
-#
-#   dt <- get_RT_summary(dsList, ftarget = Fseq)
-#   dt[, `:=`(upper = mean + sd, lower = mean - sd)]
-#   dt
-# })
-#
-# #TODO: Think of a better method to add / remove traces. Keep an eye on https://github.com/ropensci/plotly/issues/1248 for possible fix
-# update_ert_per_fct_ERT <- observe({
-#   req(input$ERTPlot.Min, input$ERTPlot.Max, DATA())
-#
-#   dsList <- DATA()
-#   N <- length(dsList)
-#   if (input$ERTPlot.show.ERT){
-#     nr_other_active = isolate(1+input$ERTPlot.show.mean + input$ERTPlot.show.median)
-#     legends <- get_legends(dsList)
-#     colors <- color_palettes(N)
-#     dt <- ert_per_fct_data()
-#
-#     for (i in seq_along(dsList)) {
-#       rgb_str <- paste0('rgb(', paste0(col2rgb(colors[i]), collapse = ','), ')')
-#
-#       legend <- legends[i]
-#       ds_ERT <- dt[algId == attr(dsList[[i]], 'algId') &
-#                      funcId == attr(dsList[[i]], 'funcId') &
-#                      DIM == attr(dsList[[i]], 'DIM')]
-#       plotlyProxy("ERT_PER_FUN", session) %>%
-#         plotlyProxyInvoke("addTraces", list(x = ds_ERT$target, y = ds_ERT$ERT, type = 'scatter',
-#                         name = paste0(legend, '.ERT'), mode = 'lines+markers',
-#                         marker = list(color = rgb_str), legendgroup = legend,
-#                         line = list(color = rgb_str)),(i-1)*nr_other_active)
-#     }
-#   }
-#   else{
-#     nr_other_active = isolate(1+input$ERTPlot.show.mean + input$ERTPlot.show.median)
-#     plotlyProxy("ERT_PER_FUN", session) %>%
-#       plotlyProxyInvoke("deleteTraces", nr_other_active*0:(N-1))
-#   }
-# })
-#
-# update_ert_per_fct_mean <- observe({
-#   req(input$ERTPlot.Min, input$ERTPlot.Max, DATA())
-#
-#   dsList <- DATA()
-#   N <- length(dsList)
-#   if (input$ERTPlot.show.mean){
-#     nr_other_active = isolate(1+input$ERTPlot.show.ERT + input$ERTPlot.show.median)
-#     legends <- get_legends(dsList)
-#     colors <- color_palettes(N)
-#     dt <- ert_per_fct_data()
-#
-#     for (i in seq_along(dsList)) {
-#       rgb_str <- paste0('rgb(', paste0(col2rgb(colors[i]), collapse = ','), ')')
-#
-#       legend <- legends[i]
-#       ds_ERT <- dt[algId == attr(dsList[[i]], 'algId') &
-#                      funcId == attr(dsList[[i]], 'funcId') &
-#                      DIM == attr(dsList[[i]], 'DIM')]
-#       plotlyProxy("ERT_PER_FUN", session) %>%
-#         plotlyProxyInvoke("addTraces", list(x = ds_ERT$target, y = ds_ERT$mean, type = 'scatter',
-#                                             name = paste0(legend, '.mean'), mode = 'lines+markers',
-#                                             marker = list(color = rgb_str), legendgroup = legend,
-#                                             line = list(color = rgb_str)),1+(i-1)*nr_other_active)
-#     }
-#   }
-#   else{
-#     nr_other_active = isolate(1+input$ERTPlot.show.ERT + input$ERTPlot.show.median)
-#     plotlyProxy("ERT_PER_FUN", session) %>%
-#       plotlyProxyInvoke("deleteTraces", 1+(nr_other_active*0:(N-1)))
-#   }
-# })
-#
-# update_ert_per_fct_median <- observe({
-#   req(input$ERTPlot.Min, input$ERTPlot.Max, DATA())
-#
-#   dsList <- DATA()
-#   N <- length(dsList)
-#   if (input$ERTPlot.show.median){
-#     nr_other_active = isolate(input$ERTPlot.show.mean + input$ERTPlot.show.ERT)
-#     legends <- get_legends(dsList)
-#     colors <- color_palettes(N)
-#     dt <- ert_per_fct_data()
-#
-#     for (i in seq_along(dsList)) {
-#       rgb_str <- paste0('rgb(', paste0(col2rgb(colors[i]), collapse = ','), ')')
-#
-#       legend <- legends[i]
-#       ds_ERT <- dt[algId == attr(dsList[[i]], 'algId') &
-#                      funcId == attr(dsList[[i]], 'funcId') &
-#                      DIM == attr(dsList[[i]], 'DIM')]
-#       plotlyProxy("ERT_PER_FUN", session) %>%
-#         plotlyProxyInvoke("addTraces", list(x = ds_ERT$target, y = ds_ERT$median, type = 'scatter',
-#                                             name = paste0(legend, '.median'), mode = 'lines+markers',
-#                                             marker = list(color = rgb_str), legendgroup = legend,
-#                                             line = list(color = rgb_str)),nr_other_active+(i-1)*(nr_other_active+1))
-#     }
-#   }
-#   else{
-#     nr_other_active = isolate(input$ERTPlot.show.mean + input$ERTPlot.show.ERT)
-#     seq_del = nr_other_active+((1+nr_other_active)*0:(N-1))
-#     plotlyProxy("ERT_PER_FUN", session) %>%
-#       plotlyProxyInvoke("deleteTraces", seq_del)
-#   }
-# })
 
 
 render_ert_per_fct <- reactive({
-  req(input$ERTPlot.Min, input$ERTPlot.Max, DATA())
+  withProgress({
+  req(input$ERTPlot.Min, input$ERTPlot.Max, length(DATA()) > 0)
   selected_algs <- input$ERTPlot.Algs
   data <- subset(DATA(), algId %in% input$ERTPlot.Algs)
   fstart <- input$ERTPlot.Min %>% as.numeric
@@ -147,24 +36,34 @@ render_ert_per_fct <- reactive({
                      show.median = input$ERTPlot.show.median,
                      scale.xlog = isolate(input$ERTPlot.semilogx),
                      scale.ylog = isolate(input$ERTPlot.semilogy),
-                     scale.reverse = (format == COCO || format == BIBOJ_COCO))
+                     scale.reverse = !attr(data[[1]],'maximization'))
+  },
+  message = "Creating plot"
+  )
 })
 
 output$ERTPlot.Multi.Plot <- renderPlotly(
   render_ERTPlot_multi_plot()
 )
 
-render_ERTPlot_multi_plot <- eventReactive(input$ERTPlot.Multi.PlotButton, {
-  req(input$ERTPlot.Multi.Algs)
+render_ERTPlot_multi_plot <- reactive({
+  req(isolate(input$ERTPlot.Multi.Algs))
+  input$ERTPlot.Multi.PlotButton
+  withProgress({
   data <- subset(DATA_RAW(),
-                 algId %in% input$ERTPlot.Multi.Algs,
+                 algId %in% isolate(input$ERTPlot.Multi.Algs),
                  DIM == input$Overall.Dim)
-  req(data)
-
+  req(length(data) > 0)
+  if (length(unique(get_funcId(data))) == 1){
+    shinyjs::alert("This plot is only available when the dataset contains multiple functions  for the selected dimension.")
+    return(NULL)
+  }
   Plot.RT.Multi_Func(data,
                    scale.xlog = input$ERTPlot.Multi.Logx,
                    scale.ylog = input$ERTPlot.Multi.Logy,
-                   scale.reverse = (format == COCO || format == BIBOJ_COCO))
+                   scale.reverse = !attr(data[[1]],'maximization'))
+  },
+  message = "Creating plot")
 })
 
 output$ERTPlot.Multi.Download <- downloadHandler(
@@ -173,8 +72,7 @@ output$ERTPlot.Multi.Download <- downloadHandler(
   },
   content = function(file) {
     save_plotly(render_ERTPlot_multi_plot(), file,
-                format = input$ERTPlot.Multi.Format,
-                width = fig_width2, height = fig_height)
+                format = input$ERTPlot.Multi.Format)
   },
   contentType = paste0('image/', input$ERTPlot.Multi.Format)
 )
@@ -199,21 +97,33 @@ get_max_targets <- function(data, aggr_on, maximize){
 }
 
 render_ERTPlot_aggr_plot <- reactive({
+  withProgress({
   #TODO: figure out how to avoid plotting again when default targets are written to input
-  data <- DATA_RAW()
+  req(length(DATA_RAW()) > 0)
+  data <- subset(DATA_RAW(), algId %in% input$ERTPlot.Aggr.Algs)
   if (length(data) == 0) return(NULL)
   data <- subset(data, DIM == input$Overall.Dim)
+  if (length(unique(get_funcId(data))) == 1){
+    shinyjs::alert("This plot is only available when the dataset contains multiple functions for the selected dimension.")
+    return(NULL)
+  }
+  if (length(unique(get_algId(data))) == 1){
+    shinyjs::alert("This plot is only available when the dataset contains multiple algorithms for the selected dimension.")
+    return(NULL)
+  }
   erts <- MAX_ERTS_FUNC()
-  aggr_on = 'funcId'
+  aggr_on <- 'funcId'
   aggr_attr <- if (aggr_on == 'funcId') get_funcId(data) else get_DIM(data)
   targets <- get_max_targets(data, aggr_on, maximize = !(format == COCO || format == BIBOJ_COCO))
   erts <- max_ERTs(data, aggr_on, targets, maximize = !(format == COCO || format == BIBOJ_COCO))
 
   Plot.RT.Aggregated(data, plot_mode = input$ERTPlot.Aggr.Mode, targets = targets,
                 scale.ylog = input$ERTPlot.Aggr.Logy,
-                maximize = !(format == COCO || format == BIBOJ_COCO),
+                maximize = attr(data[[1]],'maximization'),
                 use_rank = input$ERTPlot.Aggr.Ranking,
                 aggr_on = aggr_on, erts = erts)
+  },
+  message = "Creating plot")
 })
 
 output$ERTPlot.Aggr.Download <- downloadHandler(
@@ -222,8 +132,7 @@ output$ERTPlot.Aggr.Download <- downloadHandler(
   },
   content = function(file) {
     save_plotly(render_ERTPlot_aggr_plot(), file,
-                format = input$ERTPlot.Aggr.Format,
-                width = fig_width2, height = fig_height)
+                format = input$ERTPlot.Aggr.Format)
   },
   contentType = paste0('image/', input$ERTPlot.Aggr.Format)
 )

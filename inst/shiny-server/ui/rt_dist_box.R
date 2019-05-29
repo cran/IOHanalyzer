@@ -6,17 +6,24 @@ rt_histogram_box <- function(width = 12, collapsed = T, collapsible = T) {
         width = 2,
         textInput('RTPMF.Hist.Target', label = HTML('Select the target value'),
                   value = ''),
-
+        selectInput('RTPMF.Hist.Algs', label = 'Select which algorithms to plot:',
+                    multiple = T, selected = NULL, choices = NULL) %>% shinyInput_label_embed(
+                      custom_icon() %>%
+                        bs_embed_popover(
+                          title = "Algorithm selection", content = alg_select_info, 
+                          placement = "auto"
+                        )
+                    ),
         HTML('Choose whether the histograms are <b>overlaid</b> in one plot
              or <b>separated</b> in several subplots:'),
         selectInput('RTPMF.Hist.Mode', '',
                     choices = c("overlay", "subplot"),
                     selected = 'subplot'),
-
-        selectInput('RTPMF.Hist.Format', label = 'select the figure format',
+        checkboxInput("RTPMF.Hist.Equal", "Use equal bins for all algorithms", F),
+        selectInput('RTPMF.Hist.Format', label = 'Select the figure format',
                     choices = supported_fig_format, selected = 'pdf'),
 
-        downloadButton('RTPMF.Hist.Download', label = 'download the figure')
+        downloadButton('RTPMF.Hist.Download', label = 'Download the figure')
       ),
 
       mainPanel(
@@ -47,13 +54,21 @@ rt_pmf_box <- function(width = 12, collapsed = T, collapsible = T) {
           HTML('Select the target value for which the runtime distribution is shown'),
 
           textInput('RTPMF.Bar.Target', label = '', value = ''),
-          checkboxInput('RTPMF.Bar.Sample', label = 'show runtime for each run', value = T),
-          checkboxInput('RTPMF.Bar.Logy', label = 'scale y axis log10', value = F),
+          selectInput('RTPMF.Bar.Algs', label = 'Select which algorithms to plot:',
+                      multiple = T, selected = NULL, choices = NULL) %>% shinyInput_label_embed(
+                        custom_icon() %>%
+                          bs_embed_popover(
+                            title = "Algorithm selection", content = alg_select_info, 
+                            placement = "auto"
+                          )
+                      ),
+          checkboxInput('RTPMF.Bar.Sample', label = 'Show runtime for each run', value = T),
+          checkboxInput('RTPMF.Bar.Logy', label = 'Scale y axis \\(\\log_{10}\\)', value = F),
 
-          selectInput('RTPMF.Bar.Format', label = 'select the figure format',
+          selectInput('RTPMF.Bar.Format', label = 'Select the figure format',
                       choices = supported_fig_format, selected = 'pdf'),
 
-          downloadButton('RTPMF.Bar.Download', label = 'download the figure')
+          downloadButton('RTPMF.Bar.Download', label = 'Download the figure')
 
           # HTML('Kernel density estimation uses the following <b>kernel function</b>:'),
           # selectInput('RT_PMF_KER', '',
@@ -66,7 +81,7 @@ rt_pmf_box <- function(width = 12, collapsed = T, collapsible = T) {
         mainPanel(
           width = 10,
           column(width = 12, align = "center",
-                 HTML('<p class="alert alert-warning" align="left" style="font-size:120%;"><b>Warning! </b>The
+                 HTML('<p align="left" style="font-size:120%;"><b>Warning! </b>The
                       <b>probability mass function</b> of the runtime is approximated by the
                       treating the runtime as a <i>continuous</i> random variable and applying the <b>kernel estimation</b> (KDE):</p>'),
                  HTML('<p align="left" style="font-size:120%;">

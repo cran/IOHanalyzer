@@ -3,11 +3,11 @@
 #' @importFrom graphics hist
 #' @importFrom utils data head read.csv tail
 #' @importFrom dplyr %>% mutate
-#' @importFrom magrittr set_names set_rownames set_colnames %<>%
+#' @importFrom magrittr set_names set_rownames set_colnames %<>% mod
 #' @importFrom colorspace sequential_hcl
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom colorRamps primary.colors
-#' @importFrom data.table as.data.table rbindlist data.table fread := melt
+#' @importFrom data.table as.data.table rbindlist data.table fread := melt is.data.table
 #' @importFrom plotly add_annotations add_trace orca plot_ly rename_ subplot layout
 #' @importFrom ggplot2 aes geom_jitter geom_line geom_ribbon geom_violin ggplot element_text
 #' @importFrom ggplot2 guides scale_color_manual scale_colour_manual scale_fill_manual
@@ -18,29 +18,60 @@
 #' @useDynLib IOHanalyzer
 NULL
 #Ugly hack, but appears to be required to appease CRAN
-utils::globalVariables(c(".","algId","run","ERT","RT","max_samples",
+utils::globalVariables(c(".", "algId", "run", "ERT", "RT", "group",
                          "DIM", "Fvalue", "lower", "upper", "target", "format",
-                         "runtime", "parId", "instance", "input", "funcId"))
+                         "runtime", "parId", "instance", "input", "funcId",
+                         "budget", "dimension", "loss", "name", "optimizer_name",
+                         "rescale"))
 
 options(shiny.port = 4242)
 
-probs <- c(2, 5, 10, 25, 50, 75, 90, 95, 98) / 100.
+.onLoad <- function(libname, pkgname) {
+  op <- options()
+  op.IOHanalyzer <- list(
+    IOHanalyzer.quantiles = c(2, 5, 10, 25, 50, 75, 90, 95, 98) / 100.,
+    IOHanalyzer.max_samples = 100,
+    IOHanalyzer.backend = 'plotly',
+    IOHanalyzer.bgcolor = 'rgb(229,229,229)',
+    IOHanalyzer.gridcolor = 'rgb(255,255,255)',
+    IOHanalyzer.tickcolor = 'rgb(127,127,127)',
+    IOHanalyzer.figure_width = NULL,
+    IOHanalyzer.figure_height = NULL,
+    IOHanalyzer.legend_location = 'outside_right',
+    IOHanalyzer.legend_fontsize = 13,
+    IOHanalyzer.label_fontsize = 16,
+    IOHanalyzer.title_fontsize = 16,
+    IOHanalyzer.tick_fontsize = 16
+  )
+  toset <- !(names(op.IOHanalyzer) %in% names(op))
+  if (any(toset)) options(op.IOHanalyzer[toset])
+  
+  invisible()
+}
+
+
+IOHanalyzer_env <- new.env(parent = emptyenv())
 
 .mean <- function(x) mean(x, na.rm = T)
 .median <- function(x) median(x, na.rm = T)
 .sd <- function(x) sd(x, na.rm = T)
 .sum <- function(x) sum(x, na.rm = T)
 
-D_quantile <- function(x, pct = probs) quantile(x, pct, names = F, type = 3, na.rm = T)
-C_quantile <- function(x, pct = probs) quantile(x, pct, names = F, na.rm = T)
+IOHanalyzer_env$D_quantile <- function(x, pct = NULL){
+  if (is.null(pct)) pct <- getOption("IOHanalyzer.quantiles")
+  quantile(x, pct, names = F, type = 3, na.rm = T)
+}
+IOHanalyzer_env$C_quantile <- function(x, pct = NULL){
+  if (is.null(pct)) pct <- getOption("IOHanalyzer.quantiles")
+  quantile(x, pct, names = F, na.rm = T)
+}
 
 IOHprofiler <- 'IOHprofiler'
 COCO <- 'COCO'
 BIBOJ_COCO <- 'BIBOJ_COCO'
 TWO_COL <- 'TWO_COL'
 AUTOMATIC <- 'AUTOMATIC'
-
-max_samples <- 100
+NEVERGRAD <- 'NEVERGRAD'
 
 #' IOHanalyzer: Data Analysis Part of IOHprofiler
 #'
