@@ -1,12 +1,16 @@
 # The ECDF plots for the target value ----------------
 output$FCE_ECDF_PER_TARGET <- renderPlotly({
-  withProgress({
+  render_ecdf_per_target()
+})
+
+render_ecdf_per_target <- reactive({
   req(input$FCEECDF.Single.Target)
-  runtimes <- as.numeric(input$FCEECDF.Single.Target)
-  data <- subset(DATA(), algId %in% input$FCEECDF.Single.Algs)
-  
-  Plot.FV.ECDF_Per_Target(data,runtimes, scale.xlog = input$FCEECDF.Single.Logx,
-                          scale.reverse = !attr(DATA()[[1]],'maximization'))
+  withProgress({
+    runtimes <- as.numeric(input$FCEECDF.Single.Target)
+    data <- subset(DATA(), algId %in% input$FCEECDF.Single.Algs)
+    
+    Plot.FV.ECDF_Per_Target(data,runtimes, scale.xlog = input$FCEECDF.Single.Logx,
+                            scale.reverse = !attr(DATA()[[1]],'maximization'))
   },
   message = "Creating plot")
 })
@@ -47,8 +51,7 @@ output$FCEECDF.Mult.Download <- downloadHandler(
     eval(FIG_NAME_FV_ECDF_AGGR)
   },
   content = function(file) {
-    save_plotly(render_FV_ECDF_AGGR(), file,
-                format = input$FCEECDF.Mult.Format)
+    save_plotly(render_FV_ECDF_AGGR(), file)
   },
   contentType = paste0('image/', input$FCEECDF.Mult.Format)
 )
@@ -77,8 +80,7 @@ output$FCEECDF.AUC.Download <- downloadHandler(
     eval(FIG_NAME_FV_AUC)
   },
   content = function(file) {
-    save_plotly(render_FV_AUC(), file,
-                format = input$FCEECDF.AUC.Format)
+    save_plotly(render_FV_AUC(), file)
   },
   contentType = paste0('image/', input$FCEECDF.AUC.Format)
 )

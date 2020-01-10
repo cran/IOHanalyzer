@@ -4,7 +4,7 @@
 \alias{set_color_scheme}
 \title{Set the colorScheme of the IOHanalyzer plots}
 \usage{
-set_color_scheme(schemename, path = NULL)
+set_color_scheme(schemename, algnames, path = NULL)
 }
 \arguments{
 \item{schemename}{Three default colorschemes are implemented:
@@ -12,8 +12,11 @@ set_color_scheme(schemename, path = NULL)
 \item Default
 \item Variant 1
 \item Variant 2
+\item Variant 3
 }
 And it is also possible to select "Custom", which allows uploading of a custom set of colors}
+
+\item{algnames}{The names of the algorithms for which to set the colors}
 
 \item{path}{The path to the file containing the colors to use. Only used if 
 schemename is "Custom"}
@@ -22,5 +25,5 @@ schemename is "Custom"}
 Set the colorScheme of the IOHanalyzer plots
 }
 \examples{
-set_color_scheme("Default")
+set_color_scheme("Default", get_algId(dsl))
 }

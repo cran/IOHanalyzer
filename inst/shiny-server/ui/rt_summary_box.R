@@ -14,13 +14,14 @@ rt_stats_box <- function(width = 12, collapsible = T, collapsed = T) {
                                                            Once toggled, only \\(f_{\\text{min}}\\) is
                                                            used to generate the table on the right.</p>'), value = FALSE),
         selectInput('RTSummary.Statistics.Algid', 'Algorithms', choices = NULL, selected = NULL),
+        hr(),
         selectInput('RTSummary.Statistics.Format', 'Format', choices = c('csv','tex'), selected = 'csv'),
         downloadButton("RTSummary.Statistics.Download", "Save this table")
       ),
 
       mainPanel(
         width = 9,
-        HTML(paste0('<div style="font-size:120%;">', includeMarkdown('RMD/RT_SUMMARY_TABLE.Rmd'),'</div>')),
+        HTML(paste0('<div style="font-size:120%;">', includeMarkdown('markdown/RT_SUMMARY_TABLE.Rmd'),'</div>')),
         DT::dataTableOutput('table_RT_summary')
       )
   )
@@ -49,6 +50,7 @@ rt_sample_box <- function(width = 12, collapsible = T, collapsed = T) {
         selectInput('RTSummary.Sample.Algid', 'Algorithms',
                     choices = NULL, selected = NULL),
 
+        hr(),
         selectInput('RTSummary.Sample.DownloadFormat', 'Format of the table',
                     choices = c('long', 'wide'), selected = 'wide'),
         selectInput('RTSummary.Sample.Format', 'File-format', choices = c('csv','tex'), selected = 'csv'),
@@ -77,13 +79,14 @@ rt_overview_box <- function(width = 12, collapsible = T, collapsed = T) {
         HTML('<p align="justify">Select which algorithms to show.</p>'),
 
         selectInput('RTSummary.Overview.Algid', 'Algorithms', choices = NULL, selected = NULL),
+        hr(),
         selectInput('RTSummary.Overview.Format', 'File-format', choices = c('csv','tex'), selected = 'csv'),
         downloadButton("RTSummary.Overview.Download", "Save this table")
       ),
 
       mainPanel(
         width = 9,
-        HTML(paste0('<div style="font-size:120%;">', includeMarkdown('RMD/RT_OVERVIEW_TABLE.Rmd'), '</div>')),
+        HTML(paste0('<div style="font-size:120%;">', includeMarkdown('markdown/RT_OVERVIEW_TABLE.Rmd'), '</div>')),
         DT::dataTableOutput('table_RT_overview')
       )
   )

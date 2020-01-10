@@ -3,20 +3,21 @@ suppressMessages(library(shiny))
 suppressMessages(library(shinyjs))
 suppressMessages(library(reshape2))
 suppressMessages(library(magrittr))
+suppressMessages(library(data.table))
 suppressMessages(library(dplyr))
 suppressMessages(library(plotly))
 suppressMessages(library(shinydashboard))
 suppressMessages(library(xtable))
 suppressMessages(library(colourpicker))
-# suppressMessages(library(dashboardthemes))
 suppressMessages(library(bsplus))
 suppressMessages(library(DT))
+suppressMessages(library(knitr))
+suppressMessages(library(kableExtra))
 
 # global options
 options(datatable.print.nrows = 20)
 options(width = 80)
-# maximal number of requests, this is too many...
-options(shiny.maxRequestSize = 200 * 1024 ^ 2)   
+options(shiny.maxRequestSize = 200 * 1024 ^ 2)  # maximal upload file size
 
 # for customized 'plotlyOutput' function -----
 widget_html <- function(name, package, id, style, class, inline = FALSE, ...) {
@@ -79,13 +80,6 @@ symbols <- c("circle-open", "diamond-open", "square-open", "cross-open",
              "triangle-up-open", "triangle-down-open")
 
 # ploting settings for UI ---------------------
-# TODO: those should be deprecated. Verify and delete those
-# aspect_ratio <-  4 / 3
-# fig_height <- 1100
-# fig_height2 <- 1100
-# fig_width <- fig_height * aspect_ratio
-# fig_width2 <- fig_height * (16 / 10)
-
 plotly_height <- "auto"
 plotly_width <- "auto"
 plotly_height2 <- "auto"
@@ -109,6 +103,9 @@ print_html <- function(s, widget_id = 'process_data_promt')
 
 
 # download file names: csv, image ---------------------
+overview_single_name <- parse(text = "paste0('Overview-', paste0(input$Overall.Dim, 'D'),
+                             paste0('F', input$Overall.Funcid), '.', input$Overview.Single.Format)")
+overview_all_name <- parse(text = "paste0('Overview-All-', '.', input$Overview.All.Format)")
 RT_csv_name <- parse(text = "paste0('RTStats-', paste0(input$Overall.Dim, 'D'),
                              paste0('F', input$Overall.Funcid), '.', input$RTSummary.Statistics.Format)")
 RT_overview_name <- parse(text = "paste0('RTOverview-', paste0(input$Overall.Dim, 'D'),
@@ -121,16 +118,34 @@ FV_overview_name <- parse(text = "paste0('FVOverview-', paste0(input$Overall.Dim
                              paste0('F', input$Overall.Funcid), '.', input$FCESummary.Overview.Format)")
 FVSample_csv_name <- parse(text = "paste0('FVSample-', paste0(input$Overall.Dim, 'D'),
                              paste0('F', input$Overall.Funcid), '.', input$FCESummary.Sample.FileFormat)")
-PAR_csv_name <- parse(text = "paste0('PARSummary-', paste0(input$Overall.Dim, 'D'),
-                             paste0('F', input$Overall.Funcid), '.', input$PAR.Summary.Format)")
-PARSample_csv_name <- parse(text = "paste0('PARSample-', paste0(input$Overall.Dim, 'D'),
-                             paste0('F', input$Overall.Funcid), '.', input$PAR.Sample.FileFormat)")
-
+FV_PAR_csv_name <- parse(text = "paste0('PARSummary-', paste0(input$Overall.Dim, 'D'),
+                             paste0('F', input$Overall.Funcid), '.', input$FV_PAR.Summary.Format)")
+FV_PARSample_csv_name <- parse(text = "paste0('PARSample-', paste0(input$Overall.Dim, 'D'),
+                             paste0('F', input$Overall.Funcid), '.', input$FV_PAR.Sample.FileFormat)")
+RT_PAR_csv_name <- parse(text = "paste0('PARSummary-', paste0(input$Overall.Dim, 'D'),
+                             paste0('F', input$Overall.Funcid), '.', input$RT_PAR.Summary.Format)")
+RT_PARSample_csv_name <- parse(text = "paste0('PARSample-', paste0(input$Overall.Dim, 'D'),
+                             paste0('F', input$Overall.Funcid), '.', input$RT_PAR.Sample.FileFormat)")
+ERT_multi_func_name <- parse(text = "paste0('MultiERT-', paste0(input$Overall.Dim, 'D'),
+                             '.', input$ERTPlot.Aggr.TableFormat)")
+ERT_multi_dim_name <- parse(text = "paste0('MultiERT-', paste0('F', input$Overall.Funcid),
+                             '.', input$ERTPlot.Aggr_Dim.TableFormat)")
+FCE_multi_func_name <- parse(text = "paste0('MultiFCE-', paste0(input$Overall.Dim, 'D'),
+                             '.', input$FCEPlot.Aggr.TableFormat)")
+RT_Glicko2_table_name <- parse(text = "paste0('RT_Glicko2', '.', input$RT_Stats.Glicko.TableFormat)")
+RT_Glicko2_figure_name <- parse(text = "paste0('RT_Glicko2', '.', input$RT_Stats.Glicko.Format)")
+RT_Stats_table_name <- parse(text = "paste0('RT_Stat_Comp-', paste0(input$Overall.Dim, 'D'),
+                             paste0('F', input$Overall.Funcid), '.', input$RT_Stats.Overview.TableFormat)")
+RT_Stats_heatmap_name <- parse(text = "paste0('RT_Stat_Heatmap-', paste0(input$Overall.Dim, 'D'),
+                             paste0('F', input$Overall.Funcid), '.', input$RT_Stats.Overview.Format)")
+RT_Stats_network_name <- parse(text = "paste0('RT_Stat_Network-', paste0(input$Overall.Dim, 'D'),
+                             paste0('F', input$Overall.Funcid), '.', input$RT_Stats.Overview.Format)")
 # max_samples <- 100
 
 FIG_NAME_ERT_PER_FUN <- parse(text = "paste0('ERT-', Sys.Date(), '.', input$ERTPlot.Format)")
 FIG_NAME_ERT_PER_FUN_MULTI <- parse(text = "paste0('ERT_Mult-', Sys.Date(), '.', input$ERTPlot.Multi.Format)")
 FIG_NAME_ERT_AGGR <- parse(text = "paste0('ERT_Aggr-', Sys.Date(), '.', input$ERTPlot.Aggr.Format)")
+FIG_NAME_ERT_AGGR_DIM <- parse(text = "paste0('ERT_Aggr_Dim-', Sys.Date(), '.', input$ERTPlot.Aggr_Dim.Format)")
 FIG_NAME_RT_PMF <- parse(text = "paste0('RT_PMF-', Sys.Date(), '.', input$RTPMF.Bar.Format)")
 FIG_NAME_RT_HIST <- parse(text = "paste0('RT_HIST-', Sys.Date(), '.', input$RTPMF.Hist.Format)")
 FIG_NAME_RT_ECDF_AGGR <- parse(text = "paste0('RT_ECDF_AGGR-', Sys.Date(), '.', input$RTECDF.Multi.Format)")
@@ -145,7 +160,8 @@ FIG_NAME_FV_HIST <- parse(text = "paste0('FV_HIST-', Sys.Date(), '.', input$FCEP
 FIG_NAME_FV_ECDF_AGGR <- parse(text = "paste0('FV_ECDF_AGGR-', Sys.Date(), '.', input$FCEECDF.Mult.Format)")
 FIG_NAME_FV_AUC <- parse(text = "paste0('FV_AUC-', Sys.Date(), '.', input$FCEECDF.AUC.Format)")
 
-FIG_NAME_PAR_PER_FUN <- parse(text = "paste0('PAR-', Sys.Date(), '.', input$PAR.Plot.Format)")
+FIG_NAME_RT_PAR_PER_FUN <- parse(text = "paste0('RT_PAR-', Sys.Date(), '.', input$RT_PAR.Plot.Format)")
+FIG_NAME_FV_PAR_PER_FUN <- parse(text = "paste0('FV_PAR-', Sys.Date(), '.', input$FV_PAR.Plot.Format)")
 
 
 # ID of the control widget, whose current value should de always recorded and restored ----
@@ -159,25 +175,31 @@ widget_id <- c('RTSummary.Statistics.Min',
                'RTECDF.Multi.Min',
                'RTECDF.Multi.Max',
                'RTECDF.Multi.Step',
+               'RTECDF.Single.Target',
                'RTPMF.Bar.Target',
                'RTPMF.Hist.Target',
                'ERTPlot.Min',
                'ERTPlot.Max',
                'ERTPlot.Aggr.Targets',
-               'RTECDF.Single.Target1',
-               'RTECDF.Single.Target2',
-               'RTECDF.Single.Target3',
                'RTECDF.AUC.Min',
                'RTECDF.AUC.Max',
                'RTECDF.AUC.Step',
-               'PAR.Plot.Min',
-               'PAR.Plot.Max',
-               'PAR.Summary.Min',
-               'PAR.Summary.Max',
-               'PAR.Summary.Step',
-               'PAR.Sample.Min',
-               'PAR.Sample.Max',
-               'PAR.Sample.Step',
+               'FV_PAR.Plot.Min',
+               'FV_PAR.Plot.Max',
+               'FV_PAR.Summary.Min',
+               'FV_PAR.Summary.Max',
+               'FV_PAR.Summary.Step',
+               'FV_PAR.Sample.Min',
+               'FV_PAR.Sample.Max',
+               'FV_PAR.Sample.Step',
+               'RT_PAR.Plot.Min',
+               'RT_PAR.Plot.Max',
+               'RT_PAR.Summary.Min',
+               'RT_PAR.Summary.Max',
+               'RT_PAR.Summary.Step',
+               'RT_PAR.Sample.Min',
+               'RT_PAR.Sample.Max',
+               'RT_PAR.Sample.Step',
                'FCESummary.Statistics.Min',
                'FCESummary.Statistics.Max',
                'FCESummary.Statistics.Step',
@@ -194,15 +216,22 @@ widget_id <- c('RTSummary.Statistics.Min',
                'FCEECDF.AUC.Min',
                'FCEECDF.AUC.Max',
                'FCEECDF.AUC.Step',
-               'FCEECDF.Single.Target1',
-               'FCEECDF.Single.Target2',
-               'FCEECDF.Single.Target3')
+               'FCEECDF.Single.Target')
 
 eventExpr <- parse(text = paste0('{', paste(paste0('input$', widget_id), collapse = "\n"), '}'))
 
 # token needed for mapbox, which is again needed for ocra... ------
 supported_fig_format <- c('png', 'eps', 'svg', 'pdf')
 Sys.setenv('MAPBOX_TOKEN' = 'pk.eyJ1Ijoid2FuZ3JvbmluIiwiYSI6ImNqcmIzemhvMDBudnYzeWxoejh5c2Y5cXkifQ.9XGMWTDOsgi3-b5qG594kQ')
+
+sanity_check_id <- function(input) {
+  for (id in widget_id) {
+    tryCatch(eval(parse(text = paste0('input$', id))),
+             error = function(e) {
+               cat(paste('widget', id, 'does not exist!\n'))
+             })
+  }
+}
 
 
 

@@ -5,7 +5,7 @@
 \title{S3 constructor of the 'DataSetList'}
 \usage{
 DataSetList(path = NULL, verbose = T, print_fun = NULL,
-  maximization = TRUE, format = IOHprofiler, subsampling = FALSE)
+  maximization = NULL, format = IOHprofiler, subsampling = FALSE)
 }
 \arguments{
 \item{path}{Path to the data files. Will look for all .info-files in this directory and use
@@ -20,7 +20,7 @@ the corresponding datafiles to create the DataSetList}
 \item{format}{A character. The format of data source, options are:
 \itemize{
 \item'IOHProfiler'
-\item'COCO' 
+\item'COCO'
 \item'TWO_COL'
 \item'COCO_BIOBJ'
 \item'NEVERGRAD'
@@ -39,6 +39,6 @@ Attributes
   algId
 }
 \examples{
-path <- system.file("extdata", "ONE_PLUS_LAMDA_EA", package="IOHanalyzer")
+path <- system.file("extdata", "ONE_PLUS_LAMDA_EA", package = "IOHanalyzer")
 DataSetList(path)
 }

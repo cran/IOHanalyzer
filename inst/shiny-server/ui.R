@@ -14,7 +14,8 @@ sidebar <- dashboardSidebar(
 body <- dashboardBody(
   tags$style(HTML('.popover-title {color:black;}
                    .popover-content {color:black;}
-                   .main-sidebar {z-index:auto;}')
+                   .main-sidebar {z-index:auto;}
+                   .fa-exclamation-triangle {color:#E87722})')
   ),
   # javascript, headers ----------------------
   # to show text on the header (heading banner)
@@ -29,19 +30,31 @@ body <- dashboardBody(
         color: white;
       }
     '))),
+  tags$head(tags$style(HTML(
+    '.box-title {
+        font-size: 20px;
+        line-height: 50px;
+        text-align: left;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        padding: 0 15px;
+        overflow: hidden;
+        color: white;
+      }
+    '))),
   tags$head(
     tags$style(HTML(
       "label { font-size:120%; }"
     ))
   ),
-  if (require("dashboardthemes")){
+  if (suppressWarnings(require("dashboardthemes", quietly = T))) {
     shinyDashboardThemes(
       theme = "grey_light"
-    )
+      )
   },
   tags$script(HTML('
       $(document).ready(function() {
-        $("header").find("nav").append(\'<span class="myClass">Performance Evaluation for Iterative Optimization Heuristics</span>\');
+        $("header").find("nav").append(\'<span class="myClass">Performance Evaluation for Iterative 
+        Optimization Heuristics</span>\');
       })
      ')),
   tags$script("
@@ -66,7 +79,7 @@ body <- dashboardBody(
         var aNodeList = document.getElementsByTagName('a');
 
         for (var i = 0; i < aNodeList.length; i++) {
-          if(aNodeList[i].getAttribute('data-value') == message.tabName) {
+          if(aNodeList[i].getAttribute('data-value') == message.tabName || aNodeList[i].getAttribute('href') == message.tabName) {
             if(message.action == 'hide'){
               aNodeList[i].setAttribute('style', 'display: none;');
             } else {
@@ -90,12 +103,14 @@ body <- dashboardBody(
   use_bs_popover(),
   # tabitems ----------------------
   tabItems(
-    tabItem(tabName = 'about', includeMarkdown('RMD/about.Rmd')),
-
-    tabItem(tabName = 'readme', includeMarkdown('RMD/README.md')),
+    tabItem(tabName = 'about', includeMarkdown('markdown/about.md')),
+    tabItem(tabName = 'dataformat', includeMarkdown('markdown/dataformat.md')),
 
     # data uploading functionalities -----------------
     tabItem(tabName = 'upload',
+            fluidRow(
+              column(width = 12, welcome_bar())
+            ),
             fluidRow(
               column(width = 6,
                      upload_box(collapsible = F)
@@ -115,6 +130,16 @@ body <- dashboardBody(
             )
     ),
 
+    # General data overview ----------------------
+    tabItem(tabName = 'overview',
+            fluidRow(
+              column(width = 12,
+                     general_overview_box_all(collapsed = F),
+                     general_overview_box_single(collapsed = F)
+              )
+            )
+    ),
+    
     # RT (RunTime): Data Summary -----------------
     tabItem(tabName = 'ERT_data',
       fluidRow(
@@ -127,17 +152,26 @@ body <- dashboardBody(
     ),
 
     # RT: Expected Convergence Curve ---------------------------------------------
-    tabItem(tabName = 'ERT_convergence',
+    tabItem(tabName = 'ERT_convergence_single',
             fluidRow(
               column(
                 width = 12,
                 ERT_box(collapsed = F),
-                ERT_agg_box(height = '800px'),
-                ERT_comparison_box()
+                ERT_comparison_box_dim()
               )
             )
     ),
 
+    tabItem(tabName = 'ERT_convergence_aggr',
+            fluidRow(
+              column(
+                width = 12,
+                ERT_agg_box(height = '800px', collapsed = F),
+                ERT_comparison_box()
+              )
+            )
+    ),
+    
     # RT: histograms, violin plots ------------------------------------------
     tabItem(tabName = 'RT_PMF',
           fluidRow(
@@ -150,17 +184,53 @@ body <- dashboardBody(
     ),
 
     # RT ECDF ------------------------------------------
-    tabItem(tabName = 'RT_ECDF',
+    tabItem(tabName = 'RT_ECDF_single',
             fluidRow(
               column(
                 width = 12,
                 rt_ecdf_single_target_box(collapsed = F),
                 rt_ecdf_agg_targets_box(),
-                rt_ecdf_agg_fct_box(),
                 rt_ecdf_auc_box()
               )
             )
     ),
+    tabItem(tabName = 'RT_ECDF_aggr',
+            fluidRow(
+              column(
+                width = 12,
+                rt_ecdf_agg_fct_box(collapsed = F)
+              )
+            )
+    ),
+
+    # Parameter tab -------
+    tabItem(tabName = 'RT_PARAMETER',
+            fluidRow(
+              column(
+                width = 12,
+                rt_par_summary_box(collapsed = F),
+                rt_par_expected_value_box(),
+                rt_par_sample_box()
+              )
+            )
+    ),
+
+    tabItem(tabName = 'RT_Statistics_single',
+            fluidRow(
+              column(
+                width = 12,
+                rt_heatmap_box()
+              )
+            )
+    ),
+    tabItem(tabName = 'RT_Statistics_aggr',
+            fluidRow(
+              column(
+                width = 12,
+                rt_glicko2_box(collapsed = F)
+              )
+            )
+    ),    
 
     # FCE: Data Summary -----------------
     tabItem(tabName = 'FCE_DATA',
@@ -175,14 +245,22 @@ body <- dashboardBody(
     ),
 
     # FCE: Expected Convergence Curve ---------------------------------------------
-    tabItem(tabName = 'FCE_convergence',
+    tabItem(tabName = 'FCE_convergence_single',
             fluidRow(
               column(
                 width = 12,
-                fv_per_fct_box(collapsed = F),
-                fv_agg_box(),
-                fv_comparison_box()
+                fv_per_fct_box(collapsed = F)
                )
+            )
+    ),
+
+    tabItem(tabName = 'FCE_convergence_aggr',
+            fluidRow(
+              column(
+                width = 12,
+                fv_agg_box(collapsed = F),
+                fv_comparison_box()
+              )
             )
     ),
     # FCE: historgrams, p.d.f. --------
@@ -207,19 +285,36 @@ body <- dashboardBody(
               )
             )
     ),
-
+    
     # Parameter tab -------
-    tabItem(tabName = 'PARAMETER',
+    tabItem(tabName = 'FCE_PARAMETER',
             fluidRow(
               column(
                 width = 12,
-                par_expected_value_box(collapsed = F),
-                par_summary_box(),
-                par_sample_box()
+                fv_par_expected_value_box(collapsed = F),
+                fv_par_summary_box(),
+                fv_par_sample_box()
               )
             )
     ),
-    
+
+    tabItem(tabName = 'FCE_Statistics_single',
+            fluidRow(
+              column(
+                width = 12,
+                fv_heatmap_box(collapsed = F)
+              )
+            )
+    ),
+
+    tabItem(tabName = 'FCE_Statistics_aggr',
+            fluidRow(
+              column(
+                width = 12,
+                fv_glicko2_box(collapsed = F)
+              )
+            )
+    ),
     tabItem(tabName = 'Settings',
             fluidRow(
               column(
@@ -229,6 +324,16 @@ body <- dashboardBody(
               )
             )
     )
+    # ,
+    # 
+    # tabItem(tabName = 'Report',
+    #         fluidRow(
+    #           column(
+    #             width = 12,
+    #             main_report_box()
+    #           )
+    #         )
+    # )
   )
 )
 
