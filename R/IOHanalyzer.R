@@ -1,23 +1,23 @@
 #' @importFrom stats dt ecdf integrate median quantile sd rgeom ks.test p.adjust
 #' @importFrom grDevices col2rgb colors nclass.FD
 #' @importFrom graphics hist
-#' @importFrom utils data head read.csv tail
+#' @importFrom utils data head read.csv tail type.convert
 #' @importFrom dplyr %>% mutate
 #' @importFrom magrittr set_names set_rownames set_colnames %<>% mod
 #' @importFrom colorspace sequential_hcl
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom colorRamps primary.colors
-#' @importFrom data.table as.data.table rbindlist data.table fread := melt is.data.table setorderv
+#' @importFrom data.table as.data.table rbindlist data.table fread := melt is.data.table 
+#' @importFrom data.table setorderv frank setnames
 #' @importFrom plotly add_annotations add_trace orca plot_ly rename_ subplot layout
 #' @importFrom ggplot2 aes geom_jitter geom_line geom_ribbon geom_violin ggplot element_text
 #' @importFrom ggplot2 guides scale_color_manual scale_colour_manual scale_fill_manual
 #' @importFrom ggplot2 scale_x_continuous scale_x_log10 facet_wrap theme_set theme_grey theme
 #' @importFrom shiny req
 #' @importFrom Rcpp sourceCpp
-#' @importFrom withr with_dir
 #' @importFrom igraph graph_from_adjacency_matrix layout.circle plot.igraph 
-#' @importFrom scales rescale
 #' @importFrom PlayerRatings glicko2
+#' @importFrom stringi stri_detect_regex stri_detect_fixed stri_locate_all stri_replace
 #' @useDynLib IOHanalyzer
 NULL
 # Ugly hack, but appears to be required to appease CRAN
@@ -45,6 +45,8 @@ options(shiny.port = 4242)
     IOHanalyzer.label_fontsize = 16,
     IOHanalyzer.title_fontsize = 16,
     IOHanalyzer.tick_fontsize = 12,
+    IOHanalyzer.linewidth = 2,
+    IOHanalyzer.markersize = 4,
     IOHanalyzer.max_colors = 2 #Set to 2 since colorbrewer only works with >= 3 colors
   )
   toset <- !(names(op.IOHanalyzer) %in% names(op))
@@ -86,6 +88,7 @@ BIBOJ_COCO <- 'BIBOJ_COCO'
 TWO_COL <- 'TWO_COL'
 AUTOMATIC <- 'AUTOMATIC'
 NEVERGRAD <- 'NEVERGRAD'
+SOS <- 'SOS'
 
 #' IOHanalyzer: Data Analysis Part of IOHprofiler
 #'
@@ -114,7 +117,7 @@ NEVERGRAD <- 'NEVERGRAD'
 #' Plot.RT.Single_Func(dsList[1])
 #' 
 #' @examples 
-#' \donttest{
+#' \dontrun{
 #' runServer()
 #' }
 NULL

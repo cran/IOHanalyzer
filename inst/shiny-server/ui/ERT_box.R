@@ -19,7 +19,17 @@ ERT_box <- function(width = 12, collapsible = T, collapsed = T) {
           
           textInput('ERTPlot.Min',
                     label = F_MIN_LABEL,
-                    value = ''),
+                    value = '') %>% 
+            shinyInput_label_embed(
+              custom_icon() %>%
+                bs_embed_popover(
+                  title = "Interpolation", content = "The points on this plot are all interpollated where needed
+                    to create solid lines. This means that for functions with limited domains (such as integers),
+                    artifacts like step-wise behaviour can occur. Please carefully consider the domain of the function
+                    when interpreting this plot.", 
+                  placement = "auto"
+                )
+            ),
           textInput('ERTPlot.Max',
                     label = F_MAX_LABEL,
                     value = ''),
@@ -35,6 +45,18 @@ ERT_box <- function(width = 12, collapsible = T, collapsed = T) {
           checkboxInput('ERTPlot.show.CI',
                         label = 'Show/hide mean +/- sd',
                         value = F),
+          
+          checkboxInput('ERTPlot.show.Quantiles',
+                        label = 'Show/hide outer quantiles',
+                        value = F) %>% 
+            shinyInput_label_embed(
+              custom_icon() %>%
+                bs_embed_popover(
+                  title = "Outer quantiles", content = "This method uses the highest and lowest quantiles, which are 
+                  2% and 98% by default. This can be changed in the settings-tab.", 
+                  placement = "auto"
+                )
+            ),
 
           checkboxInput('ERTPlot.show.median',
                         label = 'Show/hide median',
@@ -51,6 +73,17 @@ ERT_box <- function(width = 12, collapsible = T, collapsed = T) {
           checkboxInput('ERTPlot.inclueOpts',
                         label = "Include optimal points found by each algorithm",
                         value = F),
+          checkboxInput('ERTPlot.show.runs',
+                        label = 'Show individual runs',
+                        value = F) %>% 
+            shinyInput_label_embed(
+                          custom_icon("exclamation-triangle") %>%
+                            bs_embed_popover(
+                              title = "Individual runs", content = "This procedure can be slow when many
+                              runs are present in the data. Please use with caution.", 
+                              placement = "auto"
+                            )
+                        ), 
           hr(),
           
           selectInput('ERTPlot.Format', label = 'Select the figure format',

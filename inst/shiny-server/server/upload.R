@@ -2,193 +2,225 @@
 folderList <- reactiveValues(data = list())
 DataList <- reactiveValues(data = DataSetList())
 
-
+observe({
+  repo_dir <- get_repo_location()
+  dirs <- list.dirs(repo_dir, full.names = F)
+  if (length(dirs) == 0) {
+    shinyjs::alert("No repository directory found. To make use of the IOHProfiler-repository,
+                   please create a folder called 'repository' in your home directory
+                   and make sure it contains at least one '.rds'-file of a DataSetList-object,
+                   such as the ones provided on the IOHProfiler github-page.")
+  }
+  else
+    updateSelectInput(session, 'repository.type', choices = dirs, selected = dirs[[1]])
+})
 # set up list of datasets (scan the repository, looking for .rds files)
 observe({
-  repo_dir <<- get_repo_location()
-  if (input$repository.type == 'PBO') {
-    rds_files <- list.files(repo_dir, pattern = '.rds') %>% sub('\\.rds$', '', .)
-    rds_files <- c(rds_files, "Example_small", "Example_large")
-  }
-  else if (input$repository.type == 'NEVERGRAD') {
-    rds_files <- list.files(paste0(repo_dir, "/nevergrad"), pattern = '.rds') %>% sub('\\.rds$', '', .)
-  }
-  else if (input$repository.type == 'BBOB') {
-    rds_files <- list.files(paste0(repo_dir, "/bbob"), pattern = '.rds') %>% sub('\\.rds$', '', .)
-  }
+  req(input$repository.type)
+  repo_dir <- get_repo_location()
+  dir <- file.path(repo_dir, input$repository.type)
+  
+  rds_files <- list.files(dir, pattern = '.rds$') %>% sub('\\.rds$', '', .)
   if (length(rds_files) != 0) {
-    updateSelectInput(session, 'repository.dataset', choices = rds_files, selected = NULL)
+    updateSelectInput(session, 'repository.dataset', choices = rds_files, selected = rds_files[[1]])
   } else {# TODO: the alert msg should be updated
     shinyjs::alert("No repository file found. To make use of the IOHProfiler-repository,
                    please create a folder called 'repository' in your home directory
-                   and make sure it contains at least one '.rds'-file, such as the ones
-                   provided on the IOHProfiler github-page.")
+                   and make sure it contains at least one '.rds'-file of a DataSetList-object,
+                   such as the ones provided on the IOHProfiler github-page.")
     updateSelectInput(session, 'repository.dataset', choices = NULL, selected = NULL)
   }
 })
 
-
-observeEvent(input$repository.type, {
-  req(input$repository.type)
-  if (input$repository.type == 'PBO') {
-    names <- list.files(repo_dir, pattern = '.rds') %>% sub('\\.rds$', '', .)
-    names <- c(names, "Example_small", "Example_large")
-  }
-  else if (input$repository.type == 'NEVERGRAD') {
-    names <- list.files(paste0(repo_dir, "/nevergrad"), pattern = '.rds') %>% sub('\\.rds$', '', .)
-  }
-  else if (input$repository.type == 'BBOB') {
-    names <- list.files(paste0(repo_dir, "/bbob"), pattern = '.rds') %>% sub('\\.rds$', '', .)
-  }
-  updateSelectInput(session, 'repository.dataset', choices = names, selected = NULL)
-})
+# observeEvent(input$repository.type, {
+#   req(input$repository.type)
+#   if (input$repository.type == 'PBO') {
+#     names <- list.files(repo_dir, pattern = '.rds') %>% sub('\\.rds$', '', .)
+#     names <- c(names, "Example_small", "Example_large")
+#   }
+#   else if (input$repository.type == 'NEVERGRAD') {
+#     names <- list.files(paste0(repo_dir, "/nevergrad"), pattern = '.rds') %>% sub('\\.rds$', '', .)
+#   }
+#   else if (input$repository.type == 'BBOB') {
+#     names <- list.files(paste0(repo_dir, "/bbob"), pattern = '.rds') %>% sub('\\.rds$', '', .)
+#   }
+#   updateSelectInput(session, 'repository.dataset', choices = names, selected = NULL)
+# })
 
 # load repository that is selected
 observeEvent(input$repository.dataset, {
   req(input$repository.dataset)
-  if (input$repository.type == 'PBO') {
-    if (input$repository.dataset  == "Example_small") {
-      repo_data <<- IOHanalyzer::dsl
+  # if (input$repository.type == 'PBO') {
+  #   if (input$repository.dataset  == "Example_small") {
+  #     repo_data <<- IOHanalyzer::dsl
+  #   }
+  #   else if (input$repository.dataset == "Example_large") {
+  #     repo_data <<- IOHanalyzer::dsl_large
+  #   }
+  #   else{
+  #     rds_file <- file.path(repo_dir, paste0(input$repository.dataset, ".rds"))
+  #   
+  #     repo_data <<- readRDS(rds_file)
+  #   }
+  #   if ( is.null(attr(repo_data, 'maximization'))) {
+  #     attr(repo_data, 'maximization') <<- T
+  #   } 
+  #   if ( is.null(attr(repo_data, 'suite'))) {
+  #     attr(repo_data, 'suite') <<- 'PBO'
+  #   } 
+  # }
+  # else if (input$repository.type == 'NEVERGRAD') {
+  #   if (!dir.exists(paste0(repo_dir, "/nevergrad"))) {
+  #     updateSelectInput(session, 'repository.type', choices = 'PBO', selected = 'PBO')
+  #     shinyjs::alert("No nevergrad data available in repository. Please make sure a folder named
+  #                    'nevergrad' exists in the repository-folder.")
+  #     return(NULL)
+  #   }
+  #   rds_file <- file.path(paste0(repo_dir, "/nevergrad"), paste0(input$repository.dataset, ".rds"))
+  #   repo_data <<- readRDS(rds_file)
+  # }
+  # else if (input$repository.type == 'BBOB') {
+  #   if (!dir.exists(paste0(repo_dir, "/bbob"))) {
+  #     updateSelectInput(session, 'repository.type', choices = 'PBO', selected = 'PBO')
+  #     shinyjs::alert("No bbob data available in repository. Please make sure a folder named
+  #                    'bbob' exists in the repository-folder.")
+  #     return(NULL)
+  #   }
+  #   rds_file <- file.path(paste0(repo_dir, "/bbob"), paste0(input$repository.dataset, ".rds"))
+  #   repo_data <<- readRDS(rds_file)
+  # }
+  repo_dir <- get_repo_location()
+  algs <- c()
+  dims <- c()
+  funcs <- c()
+  
+  for (f in input$repository.dataset) {
+    rds_file <- file.path(repo_dir, input$repository.type, paste0(f, ".rds"))
+    if (file.exists(paste0(rds_file, '_info'))) {
+      info <- readRDS(paste0(rds_file, '_info'))
     }
-    else if (input$repository.dataset == "Example_large") {
-      repo_data <<- IOHanalyzer::dsl_large
+    else {
+      dsl <- readRDS(rds_file)
+      info = list(algId = get_algId(dsl), funcId = get_funcId(dsl), DIM = get_dim(dsl))
     }
-    else{
-      rds_file <- file.path(repo_dir, paste0(input$repository.dataset, ".rds"))
-    
-      repo_data <<- readRDS(rds_file)
-    }
-    if ( is.null(attr(repo_data, 'maximization'))) {
-      attr(repo_data, 'maximization') <<- T
-    } 
-    if ( is.null(attr(repo_data, 'suite'))) {
-      attr(repo_data, 'suite') <<- 'PBO'
-    } 
+    algs <- c(algs, info$algId)
+    dims <- c(dims, info$DIM)
+    funcs <- c(funcs, info$funcId)
   }
-  else if (input$repository.type == 'NEVERGRAD') {
-    if (!dir.exists(paste0(repo_dir, "/nevergrad"))) {
-      updateSelectInput(session, 'repository.type', choices = 'PBO', selected = 'PBO')
-      shinyjs::alert("No nevergrad data available in repository. Please make sure a folder named
-                     'nevergrad' exists in the repository-folder.")
-      return(NULL)
-    }
-    rds_file <- file.path(paste0(repo_dir, "/nevergrad"), paste0(input$repository.dataset, ".rds"))
-    repo_data <<- readRDS(rds_file)
-  }
-  else if (input$repository.type == 'BBOB') {
-    if (!dir.exists(paste0(repo_dir, "/bbob"))) {
-      updateSelectInput(session, 'repository.type', choices = 'PBO', selected = 'PBO')
-      shinyjs::alert("No bbob data available in repository. Please make sure a folder named
-                     'bbob' exists in the repository-folder.")
-      return(NULL)
-    }
-    rds_file <- file.path(paste0(repo_dir, "/bbob"), paste0(input$repository.dataset, ".rds"))
-    repo_data <<- readRDS(rds_file)
-  }
-  algIds <- c(get_algId(repo_data))
-  dims <- c(get_dim(repo_data))
-  funcIds <- c(get_funcId(repo_data))
+  
+  algs <- unique(algs)
+  dims <- unique(dims)
+  funcs <- unique(funcs)
 
-  updateSelectInput(session, 'repository.algId', choices = algIds, selected = algIds)
+  updateSelectInput(session, 'repository.algId', choices = algs, selected = algs)
   updateSelectInput(session, 'repository.dim', choices = dims, selected = dims)
-  updateSelectInput(session, 'repository.funcId', choices = funcIds, selected = funcIds)
+  updateSelectInput(session, 'repository.funcId', choices = funcs, selected = funcs)
   shinyjs::enable('repository.load_button')
 })
 
 # add the data from repository
 observeEvent(input$repository.load_button, {
-  data <- repo_data
+  data <- DataSetList()
+  repo_dir <- get_repo_location()
+  for (f in input$repository.dataset) {
+    rds_file <- file.path(repo_dir, input$repository.type, paste0(f, ".rds"))
+    data <- c(data, readRDS(rds_file))
+  }
   data <- subset(data, funcId %in% input$repository.funcId)
   data <- subset(data, DIM %in% input$repository.dim)
   data <- subset(data, algId %in% input$repository.algId)
-  if (length(DataList$data) > 0 && attr(data, 'suite') != attr(DataList$data, 'suite')) {
-    shinyjs::alert(paste0("Attempting to add data from a different suite to the currently",
-                   " loaded data.\nPlease either remove the currently loaded data or", 
+  
+  if (length(DataList$data) > 0 && attr(data, 'maximization') != attr(DataList$data, 'maximization')) {
+    shinyjs::alert(paste0("Attempting to add data from a different optimization type to the currently",
+                   " loaded data.\nPlease either remove the currently loaded data or",
                    " choose a different dataset to load."))
     return(NULL)
   }
+  
   DataList$data <- c(DataList$data, data)
   update_menu_visibility(attr(DataList$data, 'suite'))
-  set_format_func(attr(DataList$data, 'suite'))
+  # set_format_func(attr(DataList$data, 'suite'))
   set_color_scheme("Default", get_algId(DataList$data))
 })
 
+# decompress zip files recursively and return the root directory of extracted files 
+unzip_fct_recursive <- function(zipfile, exdir, print_fun = print, alert_fun = print, depth = 0) {
+  filetype <- basename(zipfile) %>% 
+    strsplit('\\.') %>% `[[`(1) %>%  
+    rev %>% 
+    `[`(1)
+  folders <- list()
+  
+  if (filetype == 'zip')
+    unzip_fct <- unzip
+  else if (filetype %in% c('bz2', 'bz', 'gz', 'tar', 'tgz', 'tar.gz', 'xz'))
+    unzip_fct <- untar
+  
+  files <- unzip_fct(zipfile, list = FALSE, exdir = exdir)
+  if (length(files) == 0) {
+    alert_fun("An error occured while unzipping the provided files.\n
+               Please ensure no archives are corrupted and the filenames are
+               in base-64.")
+    return(NULL)
+  }
+  print_fun(paste0('<p style="color:blue;">Succesfully unzipped ', basename(zipfile), '.<br>'))
+  
+  folders <- grep('*.info|csv|txt', files, value = T) %>% 
+    dirname %>% 
+    unique %>% 
+    grep('__MACOSX', ., value = T, invert = T) %>%  # to get rid of __MACOSX folder on MAC..
+    c(folders)
+  
+  zip_files <- grep('.*zip|bz2|bz|gz|tar|tgz|tar\\.gz|xz', files, value = T, perl = T) %>% 
+    grep('__MACOSX', ., value = T, invert = T)
+  
+  if (depth <= 3) { # only allow for 4 levels of recursions
+    for (zipfile in zip_files) {
+      .folders <- unzip_fct_recursive(zipfile, dirname(zipfile), alert_fun, print_fun, depth + 1)
+      folders <- c(folders, .folders)
+    }
+  }
+  
+  folders
+}
+
 # upload the compressed the data file and uncompress them
 selected_folders <- reactive({
-  if (!is.null(input$upload.add_zip)) {
-    tryCatch({
+  if (is.null(input$upload.add_zip)) return(NULL)
+  
+  tryCatch({
     datapath <- input$upload.add_zip$datapath
-    folders <- rep('', length(datapath))
+    folders <- c()
 
     for (i in seq(datapath)) {
-      filetype <- sub('[^\\.]*\\.', '', basename(datapath[i]), perl = T)
-      print_html(paste0('<p style="color:blue;">Handling ', filetype, '-data.<br>'))
+      filetype <- basename(datapath[i]) %>% 
+        strsplit('\\.') %>% `[[`(1) %>%  
+        rev %>% 
+        `[`(1)
       
+      print_html(paste0('<p style="color:blue;">Handling ', filetype, '-data.<br>'))
       if (filetype == 'csv') {
-        folders[i] <- datapath[[i]]
+        # add the data path to the folders list direct
+        folders <- c(folders, datapath[[i]])
         next
       }
       
-      if (filetype == 'zip')
-        unzip_fct <- unzip
-      else if (filetype %in% c('bz2', 'bz', 'gz', 'tar', 'tgz', 'tar.gz', 'xz'))
-        unzip_fct <- untar
-      else{
-        shinyjs::alert("This filetype is not (yet) supported.\n 
-                        Please use a different format. \n
-                        We support the following compression formats: \n 
-                       'zip', 'bz2', 'bz', 'gz', 'tar', 'tgz', 'tar.gz' and 'xz'.\n
-                       We also have limited support for csv-files (in Nevergrad format).")
-        return(NULL)
-      }
-      if (filetype == 'zip')
-        files <- unzip_fct(datapath[i], list = T)$Name
-      else
-        files <- unzip_fct(datapath[i], list = T)
-
-      idx <- grep('*.info', files)[1]
-      info <- files[idx]
-
-      if (is.null(info)) {
-        idx <- grep('*.csv', files)[1]
-        info <- files[idx]
-        if (is.null(info))
-          return(NULL)
-      }
-      
-      if (basename(info) == info) {
-        folder <- basename(tempfile("dir-"))  # generate a folder name here
-        .exdir <- file.path(exdir, folder)
-        dir.create(.exdir, recursive = T)
-        unzip_fct(datapath[i], list = FALSE, exdir = .exdir)
-        print_html(paste0('<p style="color:blue;">Succesfully unzipped ', basename(datapath[i]), '.<br>'))
-        folders[i] <- .exdir
-      } else {
-        folder <- dirname(info)
-        res <- unzip_fct(datapath[i], list = FALSE, exdir = exdir)
-        if (length(res) == 0) {
-          shinyjs::alert("An error occured while unzipping the provided files.\n
-               Please ensure no archives are corrupted and the filenames are
-               in base-64.")
-          return(NULL)
-        }
-        print_html(paste0('<p style="color:blue;">Succesfully unzipped ', basename(datapath[i]), '.<br>'))
-        folders[i] <- file.path(exdir, folder)
-      }
+      .folders <- unzip_fct_recursive(datapath[i], exdir, print_html, shinyjs::alert) %>% unique
+      folders %<>% c(.folders)
     }
     folders
-    }, error = function(e) {shinyjs::alert(paste0("The following error occured when processing the uploaded data: ", e))
-      })
-  } else
-    NULL
+  }, error = function(e) shinyjs::alert(paste0("The following error occured when processing the uploaded data: ", e))
+  )
 })
 
 # load, process the data folders and update DataSetList
 observeEvent(selected_folders(), {
+  withProgress({
   folders <- selected_folders()
+
   format_selected <- input$upload.data_format
   maximization <- input$upload.maximization
-
+  if (maximization == "AUTOMATIC") maximization <- NULL
   req(length(folders) != 0)
 
   if (length(folderList$data) == 0)
@@ -206,21 +238,21 @@ observeEvent(selected_folders(), {
   else
     format_detected <- format_detected[[1]]
   print_html(paste0('<p style="color:blue;">Data processing of source type:', format_detected, ' <br>'))
-  
-  
+
+
   for (folder in folder_new) {
     indexFiles <- scan_index_file(folder)
 
-    if (length(indexFiles) == 0 && format_detected != NEVERGRAD)
+    if (length(indexFiles) == 0 && format_detected != NEVERGRAD && format_detected != "SOS")
       print_html(paste('<p style="color:red;">No .info-files detected in the
-                       uploaded folder:</p>', folder))
+                       uploaded folder, while they were expected:</p>', folder))
     else {
       folderList$data <- c(folderList$data, folder)
 
       # read the data set and handle potential errors
       new_data <- tryCatch(
         DataSetList(folder, print_fun = print_html,
-                    maximization = NULL,
+                    maximization = maximization,
                     format = format_detected,
                     subsampling = input$upload.subsampling),
         error = function(e) {
@@ -230,14 +262,14 @@ observeEvent(selected_folders(), {
           DataSetList()
         }
       )
-      
+
       tryCatch(
         DataList$data <- c(DataList$data, new_data),
         error = function(e) {
-          print_html(paste('<p style="color:red;">The following error happened', 
+          print_html(paste('<p style="color:red;">The following error happened',
                            'when adding the uploaded data set:</p>'))
-          print_html(paste('<p style="color:red;">', e, 
-                           '\nRemoving the old data.</p>'))        
+          print_html(paste('<p style="color:red;">', e,
+                           '\nRemoving the old data.</p>'))
           DataList$data <- new_data
         }
       )
@@ -246,29 +278,37 @@ observeEvent(selected_folders(), {
                     add = TRUE)
     }
   }
+  DataList$data <- clean_DataSetList(DataList$data)
   if (is.null(DataList$data)) {
-    shinyjs::alert("An error occurred when processing the uploaded data. 
+    shinyjs::alert("An error occurred when processing the uploaded data.
                    Please ensure the data is not corrupted.")
     return(NULL)
   }
   update_menu_visibility(attr(DataList$data, 'suite'))
-  set_format_func(attr(DataList$data, 'suite'))
+  # set_format_func(attr(DataList$data, 'suite'))
   set_color_scheme("Default", get_algId(DataList$data))
+  }, message = "Processing data, this might take some time")
 })
 
 update_menu_visibility <- function(suite){
-  if (suite == NEVERGRAD) {
+  if (all(suite == NEVERGRAD)) {
     #TODO: Better way of doing this such that these pages are not even populated with data instead of just being hidden
     session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "#shiny-tab-ERT"))
   }
   else{
     session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "#shiny-tab-ERT"))
   }
-  if (suite == "PBO") {
+  if (all(suite == "PBO")) {
     session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "FCE_ECDF"))
   }
   else {
     session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "FCE_ECDF"))
+  }
+  if (any(suite == "SOS")) {
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "show", tabName = "Positions"))
+  }
+  else {
+    session$sendCustomMessage(type = "manipulateMenuItem", message = list(action = "hide", tabName = "Positions"))
   }
 }
 
@@ -280,7 +320,7 @@ observeEvent(input$upload.remove_data, {
     folderList$data <- list()
     print_html('<p style="color:red;">all data are removed!</p>')
     print_html('', 'upload_data_promt')
-    
+
   }
 })
 
@@ -312,110 +352,111 @@ observe({
   selected_f <- attr(selected_ds,'funcId')
   selected_dim <- attr(selected_ds, 'DIM')
   selected_alg <- attr(selected_ds, 'algId')
-  
+
   updateSelectInput(session, 'Overall.Dim', choices = DIMs, selected = selected_dim)
   updateSelectInput(session, 'Overall.Funcid', choices = funcIds, selected = selected_f)
+  updateSelectInput(session, 'ERTPlot.Aggr.Funcs', choices = funcIds, selected = funcIds)
   
   updateSelectInput(session, 'Overview.Single.Algid', choices = algIds_, selected = algIds_)
   
-  updateSelectInput(session, 'Report.RT.Overview-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.RT.Overview-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.Overview-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.Statistics-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.RT.Statistics-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.Statistics-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.Single_ERT-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.RT.Single_ERT-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.Single_ERT-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.Multi_ERT-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.Multi_ERT-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.Rank-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.Rank-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.Histogram-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.RT.Histogram-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.Histogram-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.PMF-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.RT.PMF-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.PMF-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.ECDF_Single_Target-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.RT.ECDF_Single_Target-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.ECDF_Single_Target-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.ECDF_Single_Function-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.RT.ECDF_Single_Function-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.ECDF_Single_Function-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.ECDF_Aggregated-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.RT.ECDF_AUC-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.RT.ECDF_AUC-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.RT.ECDF_AUC-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.Overview-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.FV.Overview-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.Overview-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.Statistics-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.FV.Statistics-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.Statistics-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.Single_FCE-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.FV.Single_FCE-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.Single_FCE-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.Multi_FCE-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.Multi_FCE-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.Rank-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.Rank-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.Histogram-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.FV.Histogram-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.Histogram-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.PMF-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.FV.PMF-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.PMF-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.ECDF_Single_Target-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.FV.ECDF_Single_Target-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.ECDF_Single_Target-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.ECDF_Single_Function-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.FV.ECDF_Single_Function-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.ECDF_Single_Function-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.ECDF_Aggregated-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.FV.ECDF_AUC-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.FV.ECDF_AUC-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.FV.ECDF_AUC-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.Param.Plot-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.Param.Plot-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.Param.Plot-Alg', choices = algIds_, selected = algIds_)
-  
-  updateSelectInput(session, 'Report.Param.Statistics-FuncId', choices = funcIds, selected = selected_f)
-  updateSelectInput(session, 'Report.Param.Statistics-DIM', choices = DIMs, selected = selected_dim)
-  updateSelectInput(session, 'Report.Param.Statistics-Alg', choices = algIds_, selected = algIds_)
+  # updateSelectInput(session, 'Report.RT.Overview-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.RT.Overview-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.Overview-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.Statistics-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.RT.Statistics-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.Statistics-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.Single_ERT-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.RT.Single_ERT-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.Single_ERT-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.Multi_ERT-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.Multi_ERT-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.Rank-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.Rank-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.Histogram-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.RT.Histogram-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.Histogram-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.PMF-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.RT.PMF-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.PMF-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.ECDF_Single_Target-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.RT.ECDF_Single_Target-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.ECDF_Single_Target-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.ECDF_Single_Function-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.RT.ECDF_Single_Function-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.ECDF_Single_Function-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.ECDF_Aggregated-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.RT.ECDF_AUC-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.RT.ECDF_AUC-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.RT.ECDF_AUC-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.Overview-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.FV.Overview-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.Overview-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.Statistics-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.FV.Statistics-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.Statistics-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.Single_FCE-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.FV.Single_FCE-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.Single_FCE-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.Multi_FCE-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.Multi_FCE-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.Rank-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.Rank-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.Histogram-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.FV.Histogram-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.Histogram-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.PMF-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.FV.PMF-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.PMF-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.ECDF_Single_Target-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.FV.ECDF_Single_Target-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.ECDF_Single_Target-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.ECDF_Single_Function-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.FV.ECDF_Single_Function-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.ECDF_Single_Function-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.ECDF_Aggregated-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.FV.ECDF_AUC-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.FV.ECDF_AUC-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.FV.ECDF_AUC-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.Param.Plot-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.Param.Plot-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.Param.Plot-Alg', choices = algIds_, selected = algIds_)
+  # 
+  # updateSelectInput(session, 'Report.Param.Statistics-FuncId', choices = funcIds, selected = selected_f)
+  # updateSelectInput(session, 'Report.Param.Statistics-DIM', choices = DIMs, selected = selected_dim)
+  # updateSelectInput(session, 'Report.Param.Statistics-Alg', choices = algIds_, selected = algIds_)
   
   updateSelectInput(session, 'RT_Stats.Glicko.Algid', choices = algIds_, selected = algIds_)
   updateSelectInput(session, 'RT_Stats.Glicko.Funcid', choices = funcIds, selected = selected_f)
   updateSelectInput(session, 'RT_Stats.Glicko.Dim', choices = DIMs, selected = selected_dim)
-  
+
   updateSelectInput(session, 'RT_Stats.Overview.Algid', choices = algIds_, selected = algIds_)
-  
+
   updateSelectInput(session, 'FV_Stats.Glicko.Algid', choices = algIds_, selected = algIds_)
   updateSelectInput(session, 'FV_Stats.Glicko.Funcid', choices = funcIds, selected = selected_f)
   updateSelectInput(session, 'FV_Stats.Glicko.Dim', choices = DIMs, selected = selected_dim)
-  
+
   updateSelectInput(session, 'FV_Stats.Overview.Algid', choices = algIds_, selected = algIds_)
   updateSelectInput(session, 'RTSummary.Statistics.Algid', choices = algIds, selected = 'all')
   updateSelectInput(session, 'RTSummary.Overview.Algid', choices = algIds, selected = 'all')
@@ -451,6 +492,7 @@ observe({
   updateSelectInput(session, 'FCEECDF.Single.Algs', choices = algIds_, selected = algIds_)
   updateSelectInput(session, 'FCEECDF.Mult.Algs', choices = algIds_, selected = algIds_)
   updateSelectInput(session, 'FCEECDF.AUC.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'ParCoordPlot.Algs', choices = algIds_, selected = algIds_[[1]])
   updateSelectInput(session, 'FV_PAR.Plot.Params', choices = parIds_, selected = parIds_)
   updateSelectInput(session, 'RT_PAR.Plot.Params', choices = parIds_, selected = parIds_)
 })
@@ -459,7 +501,7 @@ observe({
 DATA <- reactive({
   dim <- input$Overall.Dim
   id <- input$Overall.Funcid
-  
+
   if (length(DataList$data) == 0) return(NULL)
 
   d <- subset(DataList$data, DIM == dim, funcId == id)

@@ -1,5 +1,9 @@
 # IOHanalyzer
 
+[![metacran downloads](https://cranlogs.r-pkg.org/badges/IOHanalyzer)](https://cran.r-project.org/package=IOHanalyzer)
+[![CRAN_Status_Badge_version_last_release](https://www.r-pkg.org/badges/version-last-release/IOHanalyzer)](https://cran.r-project.org/package=IOHanalyzer)
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+
 The __performance analyzer__ for **I**terative **O**ptimization **H**euristics (IOHs).
 
 * __Documentation__: [https://arxiv.org/abs/1810.05281](https://arxiv.org/abs/1810.05281)
@@ -57,13 +61,29 @@ install.packages('devtools')
 devtools::install_github('IOHprofiler/IOHanalyzer')
 ```
 
+### Development version
+
+If you want to run the version on which you develop:
+
+```r
+install.packages('devtools')
+devtools::install_git("/path/to/your/IOHanalyzer/git/repo")
+```
+
 ## <a name="run"></a>Runinng the Web Interface locally
 
-The IOHanalyzer package can be installed and loaded using the following commands:
+The IOHanalyzer package can be loaded using the following commands:
 
 ```r
 library('IOHanalyzer')
 runServer()
+```
+
+It should open a browser on the `localhost` server, using a random port.
+
+You can also use a given port:
+```r
+library('IOHanalyzer'); runServer(1234)
 ```
 
 Have fun! For the complete reference on usage, please check out our [Wiki page](https://iohprofiler.github.io/).

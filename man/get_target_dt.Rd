@@ -4,7 +4,7 @@
 \alias{get_target_dt}
 \title{Generate datatables of runtime or function value targets for a DataSetList}
 \usage{
-get_target_dt(dsList, which = "by_FV")
+get_target_dt(dsList, which = "by_RT")
 }
 \arguments{
 \item{dsList}{A DataSetList}
@@ -15,7 +15,7 @@ get_target_dt(dsList, which = "by_FV")
 a data.table of targets
 }
 \description{
-Only one target is generated per (function, dimension)-pair, as opposed to the 
+Only one target is generated per (function, dimension)-pair, as opposed to the
 function `get_default_ECDF_targets`, which generates multiple targets.
 }
 \examples{

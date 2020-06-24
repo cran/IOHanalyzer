@@ -13,12 +13,13 @@ f2 <- list(
 )
 
 # font No. 3...
-f3 <- list(
+f3 <- function() {
+  list(
     family = 'Old Standard TT, serif',
-    size = getOption("IOHanalyzer.tick_fontsize", default = 16), 
+    size = getOption("IOHanalyzer.tick_fontsize", default = 12), 
     color = 'black'
-)
-
+  )
+}
 
 legend_right <- function() {
   list(x = 1.01, y = 1, orientation = 'v',
@@ -92,7 +93,7 @@ IOH_plot_ly_default <- function(title = NULL, x.title = NULL, y.title = NULL) {
                         tickcolor = getOption('IOHanalyzer.tickcolor'),
                         ticks = 'outside',
                         ticklen = 9,
-                        tickfont = f3,
+                        tickfont = f3(),
                         exponentformat = 'e',
                         zeroline = F),
            yaxis = list(
@@ -105,7 +106,7 @@ IOH_plot_ly_default <- function(title = NULL, x.title = NULL, y.title = NULL) {
                         tickcolor = getOption('IOHanalyzer.tickcolor'),
                         ticks = 'outside',
                         ticklen = 9,
-                        tickfont = f3,
+                        tickfont = f3(),
                         exponentformat = 'e',
                         zeroline = F))
 }
@@ -189,27 +190,42 @@ IOHanalyzer_env$alg_colors <- NULL
 #' @examples
 #' set_color_scheme("Default", get_algId(dsl))
 set_color_scheme <- function(schemename, algnames, path = NULL){
-  if (schemename == "Default") {
-    options(IOHanalyzer.max_colors = 2)
-  }
-  else if (schemename == "Custom" && !is.null(path)) {
-    colors <- fread(path, header = F)[[1]]
-    N <- length(colors)
-    options(IOHanalyzer.max_colors = N)
-    custom_set <- function(n) {
-      return(colors[mod(seq(n), N) + 1])
+  if (schemename == "Custom" && !is.null(path)) {
+    dt <- fread(path, header = T)
+    if (any(colnames(dt) != c("algnames", "colors", "linestyles"))) {
+      warning("Incorrect file-format has been uploaded.")
     }
-    IOHanalyzer_env$used_colorscheme <- custom_set
+    else
+      IOHanalyzer_env$alg_colors <- dt
+    return()
   } 
   else {
-    if (schemename == "Variant 1") IOHanalyzer_env$used_colorscheme <- Set1
-    else if (schemename == "Variant 2") IOHanalyzer_env$used_colorscheme <- Set2
-    else if (schemename == "Variant 3") IOHanalyzer_env$used_colorscheme <- Set3
-    options(IOHanalyzer.max_colors = length(algnames))
+    if (schemename == "Default") {
+      options(IOHanalyzer.max_colors = 2)
+    }
+    else {
+      if (schemename == "Variant 1") IOHanalyzer_env$used_colorscheme <- Set1
+      else if (schemename == "Variant 2") IOHanalyzer_env$used_colorscheme <- Set2
+      else if (schemename == "Variant 3") IOHanalyzer_env$used_colorscheme <- Set3
+      options(IOHanalyzer.max_colors = length(algnames))
+    }
+    create_color_scheme(algnames)
   }
-  create_color_scheme(algnames)
 }
 
+#' Get datatable of current color (and linestyle) scheme to file
+#' 
+#' @return data.table object with 3 columns: algnames, colors, linestyles
+#' @export
+#' @examples 
+#' get_color_scheme_dt()
+get_color_scheme_dt <- function(){
+  return(IOHanalyzer_env$alg_colors)
+}
+
+#' Helper function to create default color scheme
+#' 
+#' @noRd
 create_color_scheme <- function(algnames) {
   if (length(algnames) == 0) {
     return(NULL)
@@ -253,7 +269,8 @@ get_line_style <- function(algnames_in){
   cdt <- IOHanalyzer_env$alg_colors
   linestyles <- subset(cdt, algnames %in% algnames_in)[['linestyles']]
   if (is.null(linestyles) || length(linestyles) != length(algnames_in)) {
-    return(rep(c("solid", "dash", "dot"), ceiling(length(algnames_in)/3))[1:length(algnames_in)])
+    return(rep(c("solid", "dot", "dash", "longdash", "dashdot", "longdashdot"), 
+               ceiling(length(algnames_in)/3))[1:length(algnames_in)])
   }
   return(linestyles)
 }
@@ -295,21 +312,25 @@ color_palettes <- function(ncolor) {
 
 #' Save plotly figure in multiple format
 #'
-#' NOTE: This function requires orca to be installed, and for pdf and eps formats
-#' inkscape is also needed.
+#' NOTE: This function requires orca to be installed
 #'
 #' @param p plotly object. The plot to be saved
-#' @param file String. The name of the figure file
+#' @param file String. The name of the figure file, with the extension of the required file-format
 #' @param width Optional. Width of the figure
 #' @param height Optional. Height of the figure
 #' @param ... Additional arguments for orca
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' p <- Plot.RT.Single_Func(dsl[1])
 #' save_plotly(p, 'example_file.png')
 #' }
 save_plotly <- function(p, file, width = NULL, height = NULL, ...) {
+
+  if (!requireNamespace("withr", quietly = TRUE)) {
+    stop("Package \"withr\" needed for this function to work. Please install it.",
+      call. = FALSE)
+  }
   des <- dirname(file)
   file <- basename(file)
   format <- tools::file_ext(file)
