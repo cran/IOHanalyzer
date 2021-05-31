@@ -1,23 +1,24 @@
 #' @importFrom stats dt ecdf integrate median quantile sd rgeom ks.test p.adjust
 #' @importFrom grDevices col2rgb colors nclass.FD
 #' @importFrom graphics hist
-#' @importFrom utils data head read.csv tail type.convert
+#' @importFrom utils data head read.csv tail type.convert write.csv
 #' @importFrom dplyr %>% mutate
 #' @importFrom magrittr set_names set_rownames set_colnames %<>% mod
 #' @importFrom colorspace sequential_hcl
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom colorRamps primary.colors
 #' @importFrom data.table as.data.table rbindlist data.table fread := melt is.data.table 
-#' @importFrom data.table setorderv frank setnames
+#' @importFrom data.table setorderv frank setnames rbindlist copy
 #' @importFrom plotly add_annotations add_trace orca plot_ly rename_ subplot layout
 #' @importFrom ggplot2 aes geom_jitter geom_line geom_ribbon geom_violin ggplot element_text
 #' @importFrom ggplot2 guides scale_color_manual scale_colour_manual scale_fill_manual
 #' @importFrom ggplot2 scale_x_continuous scale_x_log10 facet_wrap theme_set theme_grey theme
 #' @importFrom shiny req
-#' @importFrom Rcpp sourceCpp
-#' @importFrom igraph graph_from_adjacency_matrix layout.circle plot.igraph 
-#' @importFrom PlayerRatings glicko2
 #' @importFrom stringi stri_detect_regex stri_detect_fixed stri_locate_all stri_replace
+#' @importFrom stringi stri_rand_strings
+#' @importFrom httr POST add_headers content authenticate
+#' @importFrom reshape2 acast
+#' @importFrom knitr kable
 #' @useDynLib IOHanalyzer
 NULL
 # Ugly hack, but appears to be required to appease CRAN
@@ -25,7 +26,7 @@ utils::globalVariables(c(".", "algId", "run", "ERT", "RT", "group",
                          "DIM", "Fvalue", "lower", "upper", "target", "format",
                          "runtime", "parId", "instance", "input", "funcId",
                          "budget", "dimension", "loss", "name", "optimizer_name",
-                         "rescale", "maxRT", "algnames", ".SD"))
+                         "rescale", "maxRT", "algnames", ".SD", "function_class"))
 
 options(shiny.port = 4242)
 
@@ -42,6 +43,8 @@ options(shiny.port = 4242)
     IOHanalyzer.figure_height = 1000,
     IOHanalyzer.legend_location = 'below',
     IOHanalyzer.legend_fontsize = 13,
+    IOHanalyzer.custom_legend_x = 0.5,
+    IOHanalyzer.custom_legend_y = -0.2,
     IOHanalyzer.label_fontsize = 16,
     IOHanalyzer.title_fontsize = 16,
     IOHanalyzer.tick_fontsize = 12,

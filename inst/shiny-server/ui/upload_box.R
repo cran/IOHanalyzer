@@ -1,15 +1,21 @@
 upload_box <- function(width = 12, collapsible = T, collapsed = T,   # TODO: find a way to include all potential arguments
-                       height = '600px') {  
+                       height = '75vh') {  
   box(
     title = HTML('<p style="font-size:120%;">Upload Data</p>'), 
     width = width, height = height, collapsed = collapsed, collapsible = collapsible, 
     solidHeader = T, status = "primary", 
     sidebarPanel(
       width = 12,
-      selectInput('upload.data_format',
-                  label = "Please choose the format of your datasets",
-                  choices = c(AUTOMATIC, TWO_COL),
-                  selected = AUTOMATIC, width = '60%') %>%
+      
+      HTML_P('<b>IOHexperimenter, Nevergrad, and BBOB/COCO data files are accepted. 
+             For alternative data files, please convert them to the format described</b> <a href="https://iohprofiler.github.io/IOHanalyzer/data/">here</a>.'),
+      
+      selectInput(
+        'upload.data_format',
+        label = "Please choose the format of your datasets",
+        choices = c(AUTOMATIC, TWO_COL),
+        selected = AUTOMATIC, width = '60%'
+      ) %>%
         shinyInput_label_embed(
           custom_icon("info") %>%
             bs_embed_tooltip(
@@ -76,7 +82,7 @@ data_list_box <- function(width = 12, collapsible = T, collapsed = T) {
 }
 
 repository_box <- function(width = 12, collapsible = F, collapsed = T, 
-                           height = '600px') {
+                           height = '75vh') {
   box(
     title = HTML('<p style="font-size:120%;">Load Data from Repository</p>'), 
     width = width, height = height, collapsed = collapsed, collapsible = collapsible,
@@ -133,8 +139,11 @@ welcome_bar <- function(width = 12, collapsible = T, collapsed = F) {
         '<font size="4">',
         includeMarkdown('markdown/welcome.md'),
         '</font>')
+      )),
+      fluidRow(valueBoxOutput("VersionBox"),
+               valueBoxOutput("WikiBox"),
+               valueBoxOutput("ContactBox")
       )
-    )
   )
 }
 

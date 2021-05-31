@@ -24,27 +24,6 @@ get_data_RT_ECDF_MULT <- reactive({
   isolate({
     targets <- RT_ECDF_MULTI_TABLE()
   })
-  
-  # if (input$RTECDF.Aggr.Func && input$RTECDF.Aggr.Dim) {
-  #   extract_funcId <- function(x) {
-  #     substr(x, 0, stringi::stri_locate_all(x, fixed = ';')[[1]][[1]] - 1) 
-  #   }
-  #   extract_dim <- function(x) {
-  #     substr(x, stringi::stri_locate_all(x, fixed = ';')[[1]][[1]] + 1, nchar(x)) 
-  #   }
-  #   targets <- melt(targets, id.vars = "funcId; DIM")
-  #   targets[, funcId := extract_funcId(`funcId; DIM`), DIM := extract_dim(`funcId; DIM`)]
-  # }
-  # else if (input$RTECDF.Aggr.Func) {
-  #   targets <- melt(targets, id.vars = "funcId")
-  #   targets[, DIM := get_dim(dsList)]
-  # }
-  # else if (input$RTECDF.Aggr.Dim) {
-  #   targets <- melt(targets, id.vars = "DIM")
-  #   targets[, funcId := get_funcId(dsList)]
-  # }
-  # 
-  # colnames(targets)[colnames(targets) == "value"] <- "target"
   generate_data.ECDF(dsList, targets, input$RTECDF.Aggr.Logx)
 })
 
@@ -52,13 +31,10 @@ render_RT_ECDF_MULT <- reactive({
   withProgress({
     plot_general_data(get_data_RT_ECDF_MULT(), 'x', 'mean', 'line', 
                       scale.xlog = input$RTECDF.Aggr.Logx, 
+                      scale.ylog = input$RTECDF.Aggr.Logy, 
                       x_title = "Function Evaluations",
                       y_title = "Proportion of (run, target, ...) pairs", 
                       show.legend = T)
-    # 
-    # Plot.RT.ECDF_Multi_Func(dsList, 
-    #                         targets = targets, 
-    #                         scale.xlog = input$RTECDF.Aggr.Logx)
   },
   message = "Creating plot")
 })
@@ -106,6 +82,40 @@ observe({
   trigger_renderDT(rnorm(1))
 })
 
+output$RTECDF.AUC.Table.Download <- downloadHandler(
+  filename = function() {
+    eval(AUC_ECDF_aggr_name)
+  },
+  content = function(file) {
+    save_table(auc_grid_table(), file)
+  }
+)
+
+auc_grid_table <- reactive({
+  dt_ecdf <- get_data_RT_ECDF_MULT()
+  generate_data.AUC(NULL, NULL, dt_ecdf = dt_ecdf)
+})
+
+output$AUC_GRID_GENERATED <- DT::renderDataTable({
+  req(length(DATA_RAW()) > 0)
+  isolate({auc_grid_table()})
+  }, 
+  editable = FALSE, 
+  rownames = FALSE,
+  options = list(
+    pageLength = 10, 
+    lengthMenu = c(5, 10, 25, -1), 
+    scrollX = T, 
+    server = T,
+    columnDefs = list(
+      list(
+        className = 'dt-right', targets = "_all"
+      )
+    )
+  ),
+  filter = 'top'
+)
+
 output$RT_GRID_GENERATED <- DT::renderDataTable({
   req(length(DATA_RAW()) > 0)
   trigger_renderDT()
@@ -144,7 +154,7 @@ observeEvent(input$RT_GRID_GENERATED_cell_edit, {
 
 observeEvent(input$RTECDF.Aggr.Table.Upload, {
   if (!is.null(input$RTECDF.Aggr.Table.Upload)) {
-    df <- read.csv2(input$RTECDF.Aggr.Table.Upload$datapath, header = T, row.names = F) %>% 
+    df <- read.csv2(input$RTECDF.Aggr.Table.Upload$datapath, header = T) %>% 
       as.data.table
     
     if (ncol(df) == ncol(RT_ECDF_MULTI_TABLE())) {
@@ -185,6 +195,18 @@ output$RT_ECDF <- renderPlotly({
   # data <- subset(DATA(), algId %in% input$RTECDF.Single.Algs)
   # Plot.RT.ECDF_Per_Target(data, ftargets, scale.xlog = input$RTECDF.Single.Logx)
 })
+
+output$AUC_GRID_GENERATED_SINGLE <- DT::renderDataTable({
+  req(length(DATA_RAW()) > 0)
+  generate_data.AUC(NULL, NULL, dt_ecdf = get_data_RT_ECDF_Single())
+})
+
+output$AUC_GRID_GENERATED_FUNC <- DT::renderDataTable({
+  req(length(DATA_RAW()) > 0)
+  input$RTECDF.Aggr.Refresh
+  generate_data.AUC(NULL, NULL, dt_ecdf = get_data_RT_ECDF_AGGR())
+})
+
 
 output$RT_GRID <- renderPrint({
   req(input$RTECDF.Multi.Min, input$RTECDF.Multi.Max, input$RTECDF.Multi.Step)
@@ -240,42 +262,42 @@ render_RT_ECDF_AGGR <- reactive({
   message = "Creating plot")
 })
 
-# evaluation rake of all courses
-output$RT_AUC <- renderPlotly({
-  render_RT_AUC()
-})
-
-output$RTECDF.AUC.Download <- downloadHandler(
-  filename = function() {
-    eval(FIG_NAME_RT_AUC)
-  },
-  content = function(file) {
-    save_plotly(render_RT_AUC(), file)
-  },
-  contentType = paste0('image/', input$RTECDF.AUC.Format)
-)
-
-get_data_RT_AUC <- reactive({
-  req(input$RTECDF.AUC.Min, input$RTECDF.AUC.Max, input$RTECDF.AUC.Step)
-  
-  fstart <- format_FV(input$RTECDF.AUC.Min) %>% as.numeric
-  fstop <- format_FV(input$RTECDF.AUC.Max) %>% as.numeric
-  fstep <- format_FV(input$RTECDF.AUC.Step) %>% as.numeric
-  data <- subset(DATA(), algId %in% input$RTECDF.AUC.Algs)
-  targets <- seq_FV(get_funvals(data), fstart, fstop, fstep, length.out = 10)
-  generate_data.AUC(data, targets)
-})
-
-render_RT_AUC <- reactive({
-  # req(input$RTECDF.AUC.Min, input$RTECDF.AUC.Max, input$RTECDF.AUC.Step)
-  # 
-  # fstart <- format_FV(input$RTECDF.AUC.Min) %>% as.numeric
-  # fstop <- format_FV(input$RTECDF.AUC.Max) %>% as.numeric
-  # fstep <- format_FV(input$RTECDF.AUC.Step) %>% as.numeric
-  # data <- subset(DATA(), algId %in% input$RTECDF.AUC.Algs)
-  # 
-  # Plot.RT.ECDF_AUC(
-  #   data, fstart, fstop, fstep, fval_formatter = format_FV
-  # )
-  plot_general_data(get_data_RT_AUC(), 'x', 'AUC', 'radar')
-})
+# # evaluation rake of all courses
+# output$RT_AUC <- renderPlotly({
+#   render_RT_AUC()
+# })
+# 
+# output$RTECDF.AUC.Download <- downloadHandler(
+#   filename = function() {
+#     eval(FIG_NAME_RT_AUC)
+#   },
+#   content = function(file) {
+#     save_plotly(render_RT_AUC(), file)
+#   },
+#   contentType = paste0('image/', input$RTECDF.AUC.Format)
+# )
+# 
+# get_data_RT_AUC <- reactive({
+#   req(input$RTECDF.AUC.Min, input$RTECDF.AUC.Max, input$RTECDF.AUC.Step)
+#   
+#   fstart <- format_FV(input$RTECDF.AUC.Min) %>% as.numeric
+#   fstop <- format_FV(input$RTECDF.AUC.Max) %>% as.numeric
+#   fstep <- format_FV(input$RTECDF.AUC.Step) %>% as.numeric
+#   data <- subset(DATA(), algId %in% input$RTECDF.AUC.Algs)
+#   targets <- seq_FV(get_funvals(data), fstart, fstop, fstep, length.out = 10)
+#   generate_data.AUC(data, targets)
+# })
+# 
+# render_RT_AUC <- reactive({
+#   # req(input$RTECDF.AUC.Min, input$RTECDF.AUC.Max, input$RTECDF.AUC.Step)
+#   # 
+#   # fstart <- format_FV(input$RTECDF.AUC.Min) %>% as.numeric
+#   # fstop <- format_FV(input$RTECDF.AUC.Max) %>% as.numeric
+#   # fstep <- format_FV(input$RTECDF.AUC.Step) %>% as.numeric
+#   # data <- subset(DATA(), algId %in% input$RTECDF.AUC.Algs)
+#   # 
+#   # Plot.RT.ECDF_AUC(
+#   #   data, fstart, fstop, fstep, fval_formatter = format_FV
+#   # )
+#   plot_general_data(get_data_RT_AUC(), 'x', 'AUC', 'radar')
+# })

@@ -17,7 +17,7 @@ suppressMessages(library(kableExtra))
 # global options
 options(datatable.print.nrows = 20)
 options(width = 80)
-options(shiny.maxRequestSize = 200 * 1024 ^ 2)  # maximal upload file size
+options(shiny.maxRequestSize = 500 * 1024 ^ 2)  # maximal upload file size
 
 # for customized 'plotlyOutput' function -----
 widget_html <- function(name, package, id, style, class, inline = FALSE, ...) {
@@ -94,15 +94,18 @@ NEVERGRAD <- 'NEVERGRAD'
 
 # directory where rds-data is stored
 get_repo_location <- function() {
-  user_repo <- file.path(Sys.getenv('HOME'), 'repository')
-  if (file.exists(user_repo)) user_repo else ''
+  repo_dir <- paste0(file.path(Sys.getenv('HOME'), 'repository'))
+  if (!is.null(getOption("IOHprofiler.repo_dir"))) {
+    repo_dir <- getOption("IOHprofiler.repo_dir")
+  }
+  if (file.exists(repo_dir)) repo_dir else ''
 }
 
 print_html <- function(s, widget_id = 'process_data_promt') 
   shinyjs::html(widget_id, s, add = TRUE)
 
-
 # download file names: csv, image ---------------------
+AUC_ECDF_aggr_name <- parse(text = "paste0('AUC_ECDF_MULTI.', input$RTECDF.AUC.Table.Format)")
 overview_single_name <- parse(text = "paste0('Overview-', paste0(input$Overall.Dim, 'D'),
                              paste0('F', input$Overall.Funcid), '.', input$Overview.Single.Format)")
 overview_all_name <- parse(text = "paste0('Overview-All-', '.', input$Overview.All.Format)")
@@ -134,12 +137,27 @@ FCE_multi_func_name <- parse(text = "paste0('MultiFCE-', paste0(input$Overall.Di
                              '.', input$FCEPlot.Aggr.TableFormat)")
 RT_Glicko2_table_name <- parse(text = "paste0('RT_Glicko2', '.', input$RT_Stats.Glicko.TableFormat)")
 RT_Glicko2_figure_name <- parse(text = "paste0('RT_Glicko2', '.', input$RT_Stats.Glicko.Format)")
+
+RT_DSC_table_name <- parse(text = "paste0('RT_DSC', '.', input$RT_Stats.DSC.TableFormat)")
+RT_DSC_figure_name <- parse(text = "paste0('RT_DSC', '.', input$RT_Stats.DSC.Format)")
+RT_DSC_figure_name_rank <- parse(text = "paste0('RT_DSC_PerformViz', '.', input$RT_Stats.DSC.Format_rank)")
+RT_DSC_table_name_rank <- parse(text = "paste0('RT_DSC_Rank', '.', input$RT_Stats.DSC.TableFormat_rank)")
+
+FV_DSC_table_name <- parse(text = "paste0('FV_DSC', '.', input$FV_Stats.DSC.TableFormat)")
+FV_DSC_figure_name <- parse(text = "paste0('FV_DSC', '.', input$FV_Stats.DSC.Format)")
+FV_DSC_figure_name_rank <- parse(text = "paste0('FV_DSC_PerformViz', '.', input$FV_Stats.DSC.Format_rank)")
+FV_DSC_table_name_rank <- parse(text = "paste0('FV_DSC_Rank', '.', input$FV_Stats.DSC.TableFormat_rank)")
+
 RT_Stats_table_name <- parse(text = "paste0('RT_Stat_Comp-', paste0(input$Overall.Dim, 'D'),
                              paste0('F', input$Overall.Funcid), '.', input$RT_Stats.Overview.TableFormat)")
 RT_Stats_heatmap_name <- parse(text = "paste0('RT_Stat_Heatmap-', paste0(input$Overall.Dim, 'D'),
                              paste0('F', input$Overall.Funcid), '.', input$RT_Stats.Overview.Format)")
 RT_Stats_network_name <- parse(text = "paste0('RT_Stat_Network-', paste0(input$Overall.Dim, 'D'),
                              paste0('F', input$Overall.Funcid), '.', input$RT_Stats.Overview.Format)")
+RT_multifunc_ERT <- parse(text = "paste0('ERT_Table_Multi', '.', input$RT.MultiERT.Format)")
+RT_multifunc_sample <- parse(text = "paste0('Sample_Table_Multi', '.', input$RT.MultiSample.Format)")
+FV_multifunc_FV <- parse(text = "paste0('FV_Table_Multi', '.', input$FV.MultiFV.Format)")
+FV_multifunc_sample <- parse(text = "paste0('Sample_Table_Multi_FV', '.', input$FV.MultiSample.Format)")
 # max_samples <- 100
 
 FIG_NAME_ERT_PER_FUN <- parse(text = "paste0('ERT-', Sys.Date(), '.', input$ERTPlot.Format)")
@@ -163,6 +181,7 @@ FIG_NAME_FV_AUC <- parse(text = "paste0('FV_AUC-', Sys.Date(), '.', input$FCEECD
 FIG_NAME_RT_PAR_PER_FUN <- parse(text = "paste0('RT_PAR-', Sys.Date(), '.', input$RT_PAR.Plot.Format)")
 FIG_NAME_FV_PAR_PER_FUN <- parse(text = "paste0('FV_PAR-', Sys.Date(), '.', input$FV_PAR.Plot.Format)")
 
+FIG_NAME_RT_SHAPLEY <- parse(text = "paste0('RT-Shapley-', Sys.Date(), '.', input$RTportfolio.Shapley.Format)")
 
 # ID of the control widget, whose current value should de always recorded and restored ----
 # those control widget are switched on and off
@@ -220,8 +239,11 @@ widget_id <- c('RTSummary.Statistics.Min',
 
 eventExpr <- parse(text = paste0('{', paste(paste0('input$', widget_id), collapse = "\n"), '}'))
 
+# Supported formats table
+supported_table_format <- c("csv", "tex", "md", "html")
+
 # token needed for mapbox, which is again needed for ocra... ------
-supported_fig_format <- c('png', 'eps', 'svg', 'pdf')
+supported_fig_format <- c('pdf', 'png', 'eps', 'svg')
 Sys.setenv('MAPBOX_TOKEN' = 'pk.eyJ1Ijoid2FuZ3JvbmluIiwiYSI6ImNqcmIzemhvMDBudnYzeWxoejh5c2Y5cXkifQ.9XGMWTDOsgi3-b5qG594kQ')
 
 sanity_check_id <- function(input) {

@@ -12,8 +12,9 @@ get_data_ERT_PER_FUN <- reactive({
   data <- subset(DATA(), algId %in% input$ERTPlot.Algs)
   fstart <- input$ERTPlot.Min %>% as.numeric
   fstop <- input$ERTPlot.Max %>% as.numeric
+  budget <- input$ERTPlot.Additional.Budget %>% as.numeric
   generate_data.Single_Function(data, fstart, fstop, input$ERTPlot.semilogx, 
-                                'by_RT', include_opts = input$ERTPlot.inclueOpts)
+                                'by_RT', include_opts = input$ERTPlot.inclueOpts, budget = budget)
 })
 
 render_ert_per_fct <- reactive({
@@ -60,7 +61,7 @@ render_ert_per_fct <- reactive({
       fstart <- isolate(input$ERTPlot.Min %>% as.numeric)
       fstop <- isolate(input$ERTPlot.Max %>% as.numeric)
       data <- isolate(subset(DATA(), algId %in% input$ERTPlot.Algs))
-      dt <- get_RT_sample(data, seq_FV(get_funvals(data), from = fstart, to = fstop,
+      dt <- get_RT_sample(data, seq_FV(get_funvals(data), from = fstart, to = fstop, length.out = 50,
                                        scale = ifelse(isolate(input$ERTPlot.semilogx), 'log', 'linear')))
       nr_runs <- ncol(dt) - 4
       for (i in seq_len(nr_runs)) {
@@ -147,6 +148,8 @@ get_data_ERT_multi_func_bulk <- reactive({
 get_data_ERT_multi_func <- reactive({
   req(isolate(input$ERTPlot.Multi.Algs))
   input$ERTPlot.Multi.PlotButton
+  data <- subset(DATA_RAW(),
+                 DIM == input$Overall.Dim)
   if (length(get_algId(data)) < 20) {
     get_data_ERT_multi_func_bulk()[algId %in% isolate(input$ERTPlot.Multi.Algs), ]
   }
@@ -165,7 +168,10 @@ get_data_ERT_multi_func <- reactive({
 render_ERTPlot_multi_plot <- reactive({
   req(isolate(input$ERTPlot.Multi.Algs))
   withProgress({
-  plot_general_data(get_data_ERT_multi_func(), x_attr = 'target', y_attr = 'ERT', 
+    dt <- get_data_ERT_multi_func()
+    if (is.null(dt)) 
+      return(NULL)
+  plot_general_data(dt, x_attr = 'target', y_attr = 'ERT', 
                     subplot_attr = 'funcId', type = 'line', scale.xlog = input$ERTPlot.Multi.Logx, 
                     scale.ylog = input$ERTPlot.Multi.Logy, x_title = 'Best-so-far f(x)', 
                     y_title = 'ERT', show.legend = T,

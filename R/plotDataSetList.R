@@ -310,7 +310,7 @@ Plot.FV.Parameters <- function(dsList, rt_min = NULL, rt_max = NULL,
 #' @param dsList A DataSetList.
 #' @param targets The target function values. Specified in a data.frame, as can be generated
 #' @param scale.xlog Whether or not to scale the x-axis logaritmically
-#' by the function 'get_default_ECDF_targets'
+#' by the function 'get_ECDF_targets'
 #'
 #' @return A plot of the empirical cumulative distriburtion as a function of
 #' the running times of the DataSetList
@@ -613,9 +613,9 @@ Plot.RT.ECDF_AUC.DataSetList <- function(dsList, fstart = NULL,
   targets <- seq_FV(get_funvals(dsList), fstart, fstop, fstep, length.out = 10)
   req(targets)
   
-  data <- generate_data.AUC(dsList, targets)
+  data <- generate_data.AUC(dsList, targets, multiple_x = TRUE)
   
-  plot_general_data(data, 'x', 'AUC', 'radar')
+  plot_general_data(data, 'x', 'auc', 'radar')
 }
 
 #' @rdname Plot.FV.PDF
@@ -682,9 +682,9 @@ Plot.FV.ECDF_Single_Func.DataSetList <- function(dsList, rt_min = NULL, rt_max =
 Plot.FV.ECDF_AUC.DataSetList <- function(dsList, rt_min = NULL, rt_max = NULL, rt_step = NULL) {
   targets <- seq_RT(get_runtimes(dsList), rt_min, rt_max, rt_step, length.out = 10)
   req(targets)
-  data <- generate_data.AUC(dsList, targets, which = 'by_FV')
+  data <- generate_data.AUC(dsList, targets, which = 'by_FV', multiple_x = TRUE)
   
-  plot_general_data(data, 'x', 'AUC', 'radar')
+  plot_general_data(data, 'x', 'auc', 'radar')
 }
 
 #' @rdname Plot.RT.Parameters
@@ -876,14 +876,18 @@ radian.rescale <- function(x, start=0, direction=1) {
 #' @export
 Plot.Stats.Significance_Graph.DataSetList <- function(dsList, ftarget, alpha = 0.01,
                                                       bootstrap.size = 30, which = 'by_FV'){
+  if (!requireNamespace("igraph", quietly = TRUE)) {
+    stop("Package \"pkg\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
   if (length(get_dim(dsList)) != 1 || length(get_funcId(dsList)) != 1 || length(get_algId(dsList)) < 2) {
     return(NULL)
   }
   p_matrix <- pairwise.test(dsList, ftarget, bootstrap.size, which)
-  g <- graph_from_adjacency_matrix(p_matrix <= alpha, mode = 'directed', diag = F)
+  g <- igraph::graph_from_adjacency_matrix(p_matrix <= alpha, mode = 'directed', diag = F)
   lab.locs <- radian.rescale(x = 1:nrow(p_matrix), direction = -1, start = 0)
 
-  plot.igraph(g, layout = layout.circle(g), vertex.size = 10, edge.arrow.size = 1,
+  igraph::plot.igraph(g, layout = igraph::layout.circle(g), vertex.size = 10, edge.arrow.size = 1,
               vertex.label.color = 'black',
               vertex.label.dist = 2,
               vertex.label.cex = 1,
@@ -953,7 +957,8 @@ add_transparancy <- function(colors, percentage){
 #' @param x_attr The column to specify the x_axis. Default is 'algId'
 #' @param legend_attr Default is 'algId' This is also used for the selection of colorschemes
 #' @param y_attr The column to specify the y_axis
-#' @param type The type of plot to use. Currently available: 'violin', 'line', 'radar', 'hist' and 'ribbon'
+#' @param type The type of plot to use. Currently available: 'violin', 'line', 'radar', 
+#' 'bar', hist' and 'ribbon'
 #' @param upper_attr When using ribbon-plot, this can be used to create a shaded area. 
 #' Only works in combination with`lower_attr` and `type` == 'ribbon' 
 #' @param lower_attr When using ribbon-plot, this can be used to create a shaded area. 
@@ -976,12 +981,12 @@ plot_general_data <- function(df, x_attr = 'algId', y_attr = 'vals', type = 'vio
                               scale.reverse = F, p = NULL, x_title = NULL,
                               y_title = NULL, plot_title = NULL, upper_attr = NULL,
                               lower_attr = NULL, subplot_attr = NULL, show.legend = F,
-                              inf.action = 'none', ...){
+                              inf.action = 'none', ...) {
   
   l <- x <- isinf <- y <- text <- l_orig <- NULL #Set local binding to remove warnings
   
   #Only allow valid plot types
-  if (!(type %in% c('violin', 'line', 'radar', 'hist', 'ribbon', 'line+ribbon'))) {
+  if (!(type %in% c('violin', 'line', 'radar', 'hist', 'ribbon', 'line+ribbon', 'bar'))) {
     stop(paste0("Provided plot type ('", type, "') is not supported"))
   }
   
@@ -1012,7 +1017,7 @@ plot_general_data <- function(df, x_attr = 'algId', y_attr = 'vals', type = 'vio
     names(legends_show) <- attrs
     
     #Get some number of rows and columns
-    n_cols <- 1 +  ceiling(length(attrs)/10)
+    n_cols <- 1 + ceiling(length(attrs)/10)
     n_rows <- ceiling(length(attrs) / n_cols)
     
     p <- lapply(seq(length(attrs)), function(idx) {
@@ -1053,8 +1058,10 @@ plot_general_data <- function(df, x_attr = 'algId', y_attr = 'vals', type = 'vio
         )
     })
     
-    
-    p <- subplot(p, nrows = n_rows, titleX = T, titleY = T, margin = 0.03) %>% 
+    p <- subplot(
+      p, nrows = n_rows, titleX = T, titleY = T, 
+      margin = c(0.02, 0.02, 0.06, 0.06)
+    ) %>% 
       layout(title = plot_title)
     return(p)
   }
@@ -1088,7 +1095,7 @@ plot_general_data <- function(df, x_attr = 'algId', y_attr = 'vals', type = 'vio
   
   #Get color and based on legend-attribute
   colors <- get_color_scheme(xs)
-  names(colors) <- xs
+  if (is.null(names(colors)) || !all(names(colors) %in% xs) ) names(colors) <- xs
   
   xscale <- if (scale.xlog) 'log' else 'linear'
   yscale <- if (scale.ylog) 'log' else 'linear'
@@ -1183,24 +1190,25 @@ plot_general_data <- function(df, x_attr = 'algId', y_attr = 'vals', type = 'vio
                }
              }
              
-          
              suppressWarnings(
                p %<>%
                  add_trace(
                    data = df, x = ~x, y = ~y, color = ~l, legendgroup = ~l_orig, name = ~l_orig,
                    type = 'scatter', mode = 'lines+markers',
-                   linetype = ~l_orig, marker = list(size = getOption('IOHanalyzer.markersize', 4)), linetypes = dashes,
+                   linetype = ~l_orig, marker = list(size = getOption('IOHanalyzer.markersize', 4)), 
+                   linetypes = dashes,
                    colors = colors, showlegend = show.legend,
                    text = ~text, line = list(width = getOption('IOHanalyzer.linewidth', 2)),
                    hovertemplate = '%{text}',
                    ...
-                 ) )
+                 ) 
+             )
              if (inf.action != 'none') {
                p %<>% add_trace(data = df[isinf == T], x = ~x, y = ~y, legendgroup = ~l_orig, name = ~l_orig,
-                    type = 'scatter', mode = 'markers',  color = ~l,
-                    marker = list(symbol = 'circle-open', size = 8 + getOption('IOHanalyzer.markersize', 4)),
-                    colors = colors, showlegend = F, text = 'Inf', hoverinfo = 'none',
-                    ...
+                                type = 'scatter', mode = 'markers',  color = ~l,
+                                marker = list(symbol = 'circle-open', size = 8 + getOption('IOHanalyzer.markersize', 4)),
+                                colors = colors, showlegend = F, text = 'Inf', hoverinfo = 'none',
+                                ...
                )
              }   
              
@@ -1235,9 +1243,14 @@ plot_general_data <- function(df, x_attr = 'algId', y_attr = 'vals', type = 'vio
              }
            }
            if (is_new_plot) {
-             p %<>% layout(xaxis = list(type = xscale, tickfont = f3(), ticklen = 3,
-                                        autorange = ifelse(scale.reverse, "reversed", T)),
-                           yaxis = list(type = yscale, tickfont = f3(), ticklen = 3))
+             if (is.numeric(df[['x']]))
+               p %<>% layout(xaxis = list(type = xscale, tickfont = f3(), ticklen = 3,
+                                          autorange = ifelse(scale.reverse, "reversed", T)),
+                             yaxis = list(type = yscale, tickfont = f3(), ticklen = 3))
+             else
+               p %<>% layout(xaxis = list(type = 'category', tickfont = f3(), ticklen = 3),
+                             yaxis = list(type = yscale, tickfont = f3(), ticklen = 3))
+             
            }
          },
          'ribbon' = {
@@ -1303,7 +1316,7 @@ plot_general_data <- function(df, x_attr = 'algId', y_attr = 'vals', type = 'vio
              add_trace(data = df, x = ~x, y = ~y, width = ~width, type = 'bar',
                        name = ~l, text = ~text, hoverinfo = 'text',
                        colors = add_transparancy(colors, 0.6), color = ~l,
-                       marker = list(line = list(color = 'rgb(8,48,107)', width = 1)),
+                       marker = list(line = list(color = 'rgb(8,48,107)')),
                        ...)
            
            if (is_new_plot) {
@@ -1311,7 +1324,94 @@ plot_general_data <- function(df, x_attr = 'algId', y_attr = 'vals', type = 'vio
                                         autorange = ifelse(scale.reverse, "reversed", T)),
                            yaxis = list(type = yscale, tickfont = f3(), ticklen = 3))
            }
-         }
+         },
+        'bar' = {
+          if (legend_attr != x_attr) {
+            warning("Inconsistent attribute selected for x-axis and legend. Using x_attr as name")
+          }
+          colors = add_transparancy(colors, 0.6)
+          for (xv in xs) {
+            p %<>%
+              add_trace(x = xv, y = df[x == xv, y], type = 'bar',
+                        name = xv,
+                        color = colors[xv],
+                        marker = list(line = list(color = 'rgb(8,48,107)')),
+                        ...)
+          }
+          
+          if (is_new_plot) {
+            p %<>% layout(xaxis = list(tickfont = f3(), ticklen = 3),
+                          yaxis = list(type = yscale, tickfont = f3(), ticklen = 3))
+          }
+        }
   )
   return(p)
+}
+
+
+#' Create the PerformViz plot
+#' 
+#' From the paper: 
+#' 
+#' @param DSC_rank_result The result from a call to DSCtool rank service (`get_dsc_rank`)
+#' 
+#' @return A performviz plot
+#' @export
+#' @examples
+#' \dontrun{
+#' Plot.Performviz(get_dsc_rank(dsl))
+#' }
+Plot.Performviz <- function(DSC_rank_result) {
+  if (!requireNamespace("ComplexHeatmap", quietly = TRUE)) {
+    stop("Package \"pkg\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  if (!requireNamespace("reshape2", quietly = TRUE)) {
+    stop("Package \"pkg\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  if (!requireNamespace("grid", quietly = TRUE)) {
+    stop("Package \"pkg\" needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  mlist <- DSC_rank_result$ranked_matrix
+  
+  problem <- NULL #Assign variable to remove warnings
+  # df_temp <- rbindlist(lapply(mlist[[problem_idx]]$result, 
+  #                             function(x) {
+  #                               list(algorithm = x$algorithm, rank =  x$rank)
+  #                             }))
+  # df_temp[, problem := mlist[[problem_idx]]$problem]
+  
+  df <- rbindlist(lapply(seq(length(mlist)), function(problem_idx) {
+    df_temp <- rbindlist(lapply(mlist[[problem_idx]]$result, 
+                                function(x) {
+                                  list(algorithm = x$algorithm, rank =  x$rank)
+                                }))
+    df_temp[, problem := mlist[[problem_idx]]$problem]
+  }))
+  
+  rank_matrix <- reshape2::acast(df, algorithm ~ problem, value.var = 'rank')
+  df <- rank_matrix
+  # colnames(df)<-index
+  # rownames(df)<-vector
+  # Define some graphics to display the distribution of columns
+  # library(ComplexHeatmap)
+  .hist = ComplexHeatmap::anno_histogram(df, gp = grid::gpar(fill = "lightblue"))
+  .density = ComplexHeatmap::anno_density(df, type = "line", gp = grid::gpar(col = "blue"))
+  ha_mix_top = ComplexHeatmap::HeatmapAnnotation(hist = .hist, density = .density)
+  # Define some graphics to display the distribution of rows
+  .violin = ComplexHeatmap::anno_density(df, type = "violin", 
+                         gp = grid::gpar(fill = "lightblue"), which = "row")
+  .boxplot = ComplexHeatmap::anno_boxplot(df, which = "row")
+  ha_mix_right = ComplexHeatmap::HeatmapAnnotation(violin = .violin, bxplt = .boxplot,
+                                   which = "row", width = grid::unit(4, "cm"))
+  # Combine annotation with heatmap
+  heatmap_main <- ComplexHeatmap::Heatmap(df, name = "Ranking", 
+          column_names_gp = grid::gpar(fontsize = 8),
+          top_annotation = ha_mix_top, 
+          top_annotation_height = grid::unit(3.8, "cm"))
+  return(ComplexHeatmap::draw(
+    ComplexHeatmap::`+.AdditiveUnit`(heatmap_main, ha_mix_right))
+  )
 }

@@ -15,7 +15,10 @@ render_ERTPlot_aggr_plot <- reactive({
     y_attr <- if (input$ERTPlot.Aggr.Ranking) 'rank' else 'value'
     y_title <- if (input$ERTPlot.Aggr.Ranking) 'Rank' else 'ERT'
     reverse_scale <- input$ERTPlot.Aggr.Mode == 'radar'
-    dt <- ERTPlot.Aggr.ERTs_obj()[funcId %in% isolate(input$ERTPlot.Aggr.Funcs), ]
+    dt <- ERTPlot.Aggr.ERTs_obj()
+    if (is.null(dt))
+      return(NULL)
+    dt <- dt[funcId %in% isolate(input$ERTPlot.Aggr.Funcs), ]
     plot_general_data(dt, type = input$ERTPlot.Aggr.Mode, x_attr = 'funcId',
                       y_attr = y_attr, x_title = "FuncId", y_title = y_title, show.legend = T,
                       scale.ylog = input$ERTPlot.Aggr.Logy, scale.reverse = reverse_scale, 
@@ -115,11 +118,7 @@ output$ERTPlot.Aggr.DownloadTable <- downloadHandler(
   },
   content = function(file) {
     df <- ert_multi_function()
-    if (input$ERTPlot.Aggr.TableFormat == 'csv')
-      write.csv(df, file, row.names = F)
-    else{
-      print(xtable(df), file = file)
-    }
+    save_table(df, file)
   }
 )
 

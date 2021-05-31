@@ -30,7 +30,7 @@ rt_histogram_box <- function(width = 12, collapsed = T, collapsible = T) {
         checkboxInput("RTPMF.Hist.Equal", "Use equal bins for all algorithms", F),
         hr(),
         selectInput('RTPMF.Hist.Format', label = 'Select the figure format',
-                    choices = supported_fig_format, selected = 'pdf'),
+                    choices = supported_fig_format, selected = supported_fig_format[[1]]),
 
         downloadButton('RTPMF.Hist.Download', label = 'Download the figure')
       ),
@@ -47,7 +47,7 @@ rt_histogram_box <- function(width = 12, collapsed = T, collapsible = T) {
                   and \\(75\\%\\) percentile of the runtime and \\(n\\) is the sample size.
                   The displayed algorithms can be selected by clicking on the legend on the right.
                   A <b>tooltip</b> and <b>toolbar</b> appears when hovering over the figure.'),
-          plotlyOutput.IOHanalyzer('RT_HIST')
+          plotlyOutput.IOHanalyzer('RT_HIST', aspect_ratio = 16/14)
         )
       )
   )
@@ -83,7 +83,7 @@ rt_pmf_box <- function(width = 12, collapsed = T, collapsible = T) {
 
           hr(),
           selectInput('RTPMF.Bar.Format', label = 'Select the figure format',
-                      choices = supported_fig_format, selected = 'pdf'),
+                      choices = supported_fig_format, selected = supported_fig_format[[1]]),
 
           downloadButton('RTPMF.Bar.Download', label = 'Download the figure')
         ),

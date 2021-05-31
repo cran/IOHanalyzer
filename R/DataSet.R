@@ -230,13 +230,13 @@ c.DataSet <- function(...) {
   RT <- align_running_time(RT_raw, format = "TWO_COL", maximization = info$maximization)$RT
   FV <- align_function_value(RT_raw, format = "TWO_COL")$FV
 
-  #TODO: Deal with cases where aligned parameters are present in original DataSets
+  # TODO: to deal with cases where aligned parameters are present in original DataSets
   PAR <- list(
     'by_FV' = RT[names(RT) != 'RT'],
     'by_RT' = FV[names(FV) != 'FV']
   )
   
-  #Unaligned parameters
+  # Unaligned parameters
   for (par_name in names(dsl[[1]]$PAR)) {
     if (!par_name %in% c('by_FV', 'by_RT'))
       PAR[[par_name]] <- unlist(lapply(dsl, function(x) {x$PAR[[par_name]]}), recursive = F)
@@ -358,6 +358,7 @@ summary.DataSet <- function(object, ...) {
 #' Get Expected RunTime
 #'
 #' @param ds A DataSet or DataSetList object
+#' @param budget Optional; overwrites the budget found in ds for ERT-calculation
 #' @param ... Arguments passed to other methods
 #' @param ftarget The function target(s) for which to get the ERT
 #'
@@ -368,7 +369,7 @@ summary.DataSet <- function(object, ...) {
 #' get_ERT(dsl[[1]], 14)
 #' @export
 #'
-get_ERT <- function(ds, ftarget, ...) UseMethod("get_ERT", ds)
+get_ERT <- function(ds, ftarget, budget, ...) UseMethod("get_ERT", ds)
 
 #' Get RunTime Sample
 #'
@@ -388,6 +389,7 @@ get_RT_sample <- function(ds, ftarget, ...) UseMethod("get_RT_sample", ds)
 #' Get RunTime Summary
 #'
 #' @param ds A DataSet or DataSetList object
+#' @param budget Optional; overwrites the budget found in ds for ERT-calculation
 #' @param ... Arguments passed to other methods
 #' @param ftarget The function target(s) for which to get the runtime summary
 #'
@@ -397,7 +399,7 @@ get_RT_sample <- function(ds, ftarget, ...) UseMethod("get_RT_sample", ds)
 #' get_RT_summary(dsl, 14)
 #' get_RT_summary(dsl[[1]], 14)
 #' @export
-get_RT_summary <- function(ds, ftarget, ...) UseMethod("get_RT_summary", ds)
+get_RT_summary <- function(ds, ftarget, budget, ...) UseMethod("get_RT_summary", ds)
 
 #' Get Funtion Value Samples
 #'
@@ -616,9 +618,10 @@ get_overview.DataSet <- function(ds, ...) {
 #' @rdname get_ERT
 #' @export
 #'
-get_ERT.DataSet <- function(ds, ftarget, ...) {
+get_ERT.DataSet <- function(ds, ftarget, budget = NULL, ...) {
   data <- ds$RT
-  maxRT <- attr(ds, 'maxRT')
+  if (is.null(budget) || is.na(budget)) maxRT <- attr(ds, 'maxRT')
+  else maxRT <- as.numeric(budget)
   algId <- attr(ds, 'algId')
   maximization <- attr(ds, 'maximization')
 
@@ -641,9 +644,10 @@ get_ERT.DataSet <- function(ds, ftarget, ...) {
 #' @rdname get_RT_summary
 #' @export
 #'
-get_RT_summary.DataSet <- function(ds, ftarget, ...) {
+get_RT_summary.DataSet <- function(ds, ftarget, budget = NULL, ...) {
   data <- ds$RT
-  maxRT <- attr(ds, 'maxRT')
+  if (is.null(budget) || is.na(budget)) maxRT <- attr(ds, 'maxRT')
+  else maxRT <- as.numeric(budget)
   algId <- attr(ds, 'algId')
   maximization <- attr(ds, 'maximization')
 
@@ -742,6 +746,22 @@ get_RT_sample.DataSet <- function(ds, ftarget, output = 'wide', ...) {
           ][order(target, run)]
   }
   res
+}
+
+#' Function to get just the RT samples needed, without any formatting to improve speed
+#' @param RT_mat A matrix containing the RT-values of a dataset
+#' @param target Which target-value to use
+#' @param maximization Whether maximization is needed or not
+#' @export
+fast_RT_samples <- function(RT_mat, target, maximization = F) {
+  if (maximization) 
+    idxs <- seq_along(rownames(RT_mat))[as.double(rownames(RT_mat)) >= target]
+  else
+    idxs <- seq_along(rownames(RT_mat))[as.double(rownames(RT_mat)) <= target]
+  if (length(idxs) > 0) {
+    return(RT_mat[idxs[[1]], ])
+  }
+  return(rep(NA, 15))
 }
 
 #' @rdname get_FV_summary

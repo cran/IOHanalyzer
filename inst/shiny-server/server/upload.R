@@ -14,6 +14,7 @@ observe({
   else
     updateSelectInput(session, 'repository.type', choices = dirs, selected = dirs[[1]])
 })
+
 # set up list of datasets (scan the repository, looking for .rds files)
 observe({
   req(input$repository.type)
@@ -32,63 +33,9 @@ observe({
   }
 })
 
-# observeEvent(input$repository.type, {
-#   req(input$repository.type)
-#   if (input$repository.type == 'PBO') {
-#     names <- list.files(repo_dir, pattern = '.rds') %>% sub('\\.rds$', '', .)
-#     names <- c(names, "Example_small", "Example_large")
-#   }
-#   else if (input$repository.type == 'NEVERGRAD') {
-#     names <- list.files(paste0(repo_dir, "/nevergrad"), pattern = '.rds') %>% sub('\\.rds$', '', .)
-#   }
-#   else if (input$repository.type == 'BBOB') {
-#     names <- list.files(paste0(repo_dir, "/bbob"), pattern = '.rds') %>% sub('\\.rds$', '', .)
-#   }
-#   updateSelectInput(session, 'repository.dataset', choices = names, selected = NULL)
-# })
-
 # load repository that is selected
 observeEvent(input$repository.dataset, {
   req(input$repository.dataset)
-  # if (input$repository.type == 'PBO') {
-  #   if (input$repository.dataset  == "Example_small") {
-  #     repo_data <<- IOHanalyzer::dsl
-  #   }
-  #   else if (input$repository.dataset == "Example_large") {
-  #     repo_data <<- IOHanalyzer::dsl_large
-  #   }
-  #   else{
-  #     rds_file <- file.path(repo_dir, paste0(input$repository.dataset, ".rds"))
-  #   
-  #     repo_data <<- readRDS(rds_file)
-  #   }
-  #   if ( is.null(attr(repo_data, 'maximization'))) {
-  #     attr(repo_data, 'maximization') <<- T
-  #   } 
-  #   if ( is.null(attr(repo_data, 'suite'))) {
-  #     attr(repo_data, 'suite') <<- 'PBO'
-  #   } 
-  # }
-  # else if (input$repository.type == 'NEVERGRAD') {
-  #   if (!dir.exists(paste0(repo_dir, "/nevergrad"))) {
-  #     updateSelectInput(session, 'repository.type', choices = 'PBO', selected = 'PBO')
-  #     shinyjs::alert("No nevergrad data available in repository. Please make sure a folder named
-  #                    'nevergrad' exists in the repository-folder.")
-  #     return(NULL)
-  #   }
-  #   rds_file <- file.path(paste0(repo_dir, "/nevergrad"), paste0(input$repository.dataset, ".rds"))
-  #   repo_data <<- readRDS(rds_file)
-  # }
-  # else if (input$repository.type == 'BBOB') {
-  #   if (!dir.exists(paste0(repo_dir, "/bbob"))) {
-  #     updateSelectInput(session, 'repository.type', choices = 'PBO', selected = 'PBO')
-  #     shinyjs::alert("No bbob data available in repository. Please make sure a folder named
-  #                    'bbob' exists in the repository-folder.")
-  #     return(NULL)
-  #   }
-  #   rds_file <- file.path(paste0(repo_dir, "/bbob"), paste0(input$repository.dataset, ".rds"))
-  #   repo_data <<- readRDS(rds_file)
-  # }
   repo_dir <- get_repo_location()
   algs <- c()
   dims <- c()
@@ -140,7 +87,10 @@ observeEvent(input$repository.load_button, {
   DataList$data <- c(DataList$data, data)
   update_menu_visibility(attr(DataList$data, 'suite'))
   # set_format_func(attr(DataList$data, 'suite'))
-  set_color_scheme("Default", get_algId(DataList$data))
+  algids <- get_algId(DataList$data)
+  if (!all(algids %in% get_color_scheme_dt()[['algnames']])) {
+    set_color_scheme("Default", algids)
+  }
 })
 
 # decompress zip files recursively and return the root directory of extracted files 
@@ -156,7 +106,7 @@ unzip_fct_recursive <- function(zipfile, exdir, print_fun = print, alert_fun = p
   else if (filetype %in% c('bz2', 'bz', 'gz', 'tar', 'tgz', 'tar.gz', 'xz'))
     unzip_fct <- untar
   
-  files <- unzip_fct(zipfile, list = FALSE, exdir = exdir)
+  files <- unzip_fct(zipfile, list = FALSE, exdir = file.path(exdir, rand_strings(1)))
   if (length(files) == 0) {
     alert_fun("An error occured while unzipping the provided files.\n
                Please ensure no archives are corrupted and the filenames are
@@ -176,12 +126,12 @@ unzip_fct_recursive <- function(zipfile, exdir, print_fun = print, alert_fun = p
   
   if (depth <= 3) { # only allow for 4 levels of recursions
     for (zipfile in zip_files) {
-      .folders <- unzip_fct_recursive(zipfile, dirname(zipfile), alert_fun, print_fun, depth + 1)
+      .folders <- unzip_fct_recursive(zipfile, dirname(zipfile), alert_fun, 
+                                      print_fun, depth + 1)
       folders <- c(folders, .folders)
     }
   }
-  
-  folders
+  unique(folders)
 }
 
 # upload the compressed the data file and uncompress them
@@ -191,7 +141,7 @@ selected_folders <- reactive({
   tryCatch({
     datapath <- input$upload.add_zip$datapath
     folders <- c()
-
+    
     for (i in seq(datapath)) {
       filetype <- basename(datapath[i]) %>% 
         strsplit('\\.') %>% `[[`(1) %>%  
@@ -199,94 +149,106 @@ selected_folders <- reactive({
         `[`(1)
       
       print_html(paste0('<p style="color:blue;">Handling ', filetype, '-data.<br>'))
-      if (filetype == 'csv') {
+      if (filetype == 'csv' || filetype == 'rds') {
         # add the data path to the folders list direct
         folders <- c(folders, datapath[[i]])
         next
       }
       
-      .folders <- unzip_fct_recursive(datapath[i], exdir, print_html, shinyjs::alert) %>% unique
+      .folders <- unzip_fct_recursive(datapath[i], exdir, print_html) %>% unique
       folders %<>% c(.folders)
     }
-    folders
+    unique(folders)
   }, error = function(e) shinyjs::alert(paste0("The following error occured when processing the uploaded data: ", e))
   )
 })
 
-# load, process the data folders and update DataSetList
+# load, process the data folders, and update DataSetList
 observeEvent(selected_folders(), {
   withProgress({
-  folders <- selected_folders()
-
-  format_selected <- input$upload.data_format
-  maximization <- input$upload.maximization
-  if (maximization == "AUTOMATIC") maximization <- NULL
-  req(length(folders) != 0)
-
-  if (length(folderList$data) == 0)
-    folder_new <- folders
-  else
-    folder_new <- setdiff(folders, intersect(folderList$data, folders))
-
-  req(length(folder_new) != 0)
-  format_detected <- lapply(folder_new, check_format) %>% unique
-
-  if (length(format_detected) != 1)
-    print_html(paste('<p style="color:red;">more than one format: <br>',
-                     format_detected,
-                     'is detected in the uploaded data set... skip the uploaded data'))
-  else
-    format_detected <- format_detected[[1]]
-  print_html(paste0('<p style="color:blue;">Data processing of source type:', format_detected, ' <br>'))
-
-
-  for (folder in folder_new) {
-    indexFiles <- scan_index_file(folder)
-
-    if (length(indexFiles) == 0 && format_detected != NEVERGRAD && format_detected != "SOS")
-      print_html(paste('<p style="color:red;">No .info-files detected in the
-                       uploaded folder, while they were expected:</p>', folder))
-    else {
-      folderList$data <- c(folderList$data, folder)
-
-      # read the data set and handle potential errors
-      new_data <- tryCatch(
-        DataSetList(folder, print_fun = print_html,
-                    maximization = maximization,
-                    format = format_detected,
-                    subsampling = input$upload.subsampling),
-        error = function(e) {
-          print_html(paste('<p style="color:red;">The following error happened
-                           when processing the data set:</p>'))
-          print_html(paste('<p style="color:red;">', e, '</p>'))
-          DataSetList()
+    folders <- selected_folders()
+    req(length(folders) != 0)
+    
+    format_selected <- input$upload.data_format
+    maximization <- input$upload.maximization
+    
+    if (maximization == "AUTOMATIC") maximization <- NULL
+    
+    if (length(folderList$data) == 0)
+      folder_new <- folders
+    else
+      folder_new <- setdiff(folders, intersect(folderList$data, folders))
+  
+    req(length(folder_new) != 0)
+    format_detected <- lapply(folder_new, check_format) %>% unique
+  
+    if (length(format_detected) > 1)
+      print_html(paste('<p style="color:red;">more than one format: <br>',
+                       format_detected,
+                       'is detected in the uploaded data set... skip the uploaded data'))
+    else
+      format_detected <- format_detected[[1]]
+    
+    print_html(paste0('<p style="color:blue;">Data processing of source type:', format_detected, ' <br>'))
+  
+    for (folder in folder_new) {
+      indexFiles <- scan_index_file(folder)
+  
+      if (length(indexFiles) == 0 && !(format_detected %in% c(NEVERGRAD, "SOS", "RDS")))
+        print_html(paste('<p style="color:red;">No .info-files detected in the
+                         uploaded folder, while they were expected:</p>', folder))
+      else {
+        folderList$data <- c(folderList$data, folder)
+        
+        if (format_detected == "RDS") {
+          new_data <- readRDS(folder)
+          if (!("DataSetList" %in% class(new_data)))
+            DataSetList()
         }
-      )
-
-      tryCatch(
-        DataList$data <- c(DataList$data, new_data),
-        error = function(e) {
-          print_html(paste('<p style="color:red;">The following error happened',
-                           'when adding the uploaded data set:</p>'))
-          print_html(paste('<p style="color:red;">', e,
-                           '\nRemoving the old data.</p>'))
-          DataList$data <- new_data
+        else {
+          # read the data set and handle potential errors
+          new_data <- tryCatch(
+            DataSetList(folder, print_fun = print_html,
+                        maximization = maximization,
+                        format = format_detected,
+                        subsampling = input$upload.subsampling),
+            error = function(e) {
+              print_html(paste('<p style="color:red;">The following error happened
+                               when processing the data set:</p>'))
+              print_html(paste('<p style="color:red;">', e, '</p>'))
+              DataSetList()
+            }
+          )
         }
-      )
-      shinyjs::html("upload_data_promt",
-                    sprintf('%d: %s\n', length(folderList$data), folder),
-                    add = TRUE)
+        tryCatch(
+          DataList$data <- c(DataList$data, new_data),
+          error = function(e) {
+            print_html(paste('<p style="color:red;">The following error happened',
+                             'when adding the uploaded data set:</p>'))
+            print_html(paste('<p style="color:red;">', e,
+                             '\nRemoving the old data.</p>'))
+            DataList$data <- new_data
+          }
+        )
+        shinyjs::html("upload_data_promt",
+                      sprintf('%d: %s\n', length(folderList$data), folder),
+                      add = TRUE)
+      }
     }
-  }
-  DataList$data <- clean_DataSetList(DataList$data)
-  if (is.null(DataList$data)) {
-    shinyjs::alert("An error occurred when processing the uploaded data.
-                   Please ensure the data is not corrupted.")
-    return(NULL)
-  }
-  update_menu_visibility(attr(DataList$data, 'suite'))
-  # set_format_func(attr(DataList$data, 'suite'))
-  set_color_scheme("Default", get_algId(DataList$data))
+    
+    DataList$data <- clean_DataSetList(DataList$data)
+    if (is.null(DataList$data)) {
+      shinyjs::alert("An error occurred when processing the uploaded data.
+                     Please ensure the data is not corrupted.")
+      return(NULL)
+    }
+    
+    update_menu_visibility(attr(DataList$data, 'suite'))
+    # set_format_func(attr(DataList$data, 'suite'))
+    algids <- get_algId(DataList$data)
+    if (!all(algids %in% get_color_scheme_dt()[['algnames']])) {
+      set_color_scheme("Default", algids)
+    }
   }, message = "Processing data, this might take some time")
 })
 
@@ -312,15 +274,40 @@ update_menu_visibility <- function(suite){
   }
 }
 
+observeEvent(input$Upload.Add_to_repo, {
+  data <- DATA_RAW()
+  repo_dir <- get_repo_location()
+  if (!file.exists(file.path(repo_dir, "public_repo"))) return(NULL)
+  nr_skipped <- 0
+  public_dir <- file.path(repo_dir, "public_repo")
+  for (algname in get_algId(data)) {
+    filename <- file.path(public_dir, paste0(algname, '.rds'))
+    if (file.exists(filename)) {
+      nr_skipped <- nr_skipped + 1
+      next
+    }
+    dsl <- subset(data, algId == algname)
+    saveRDS(dsl, file = filename)
+  }
+  nr_success <- length(get_algId(data)) - nr_skipped
+  shinyjs::alert(paste0("Successfully added ", nr_success, " algorithms to the public repository.",
+                        "A total of ", nr_skipped, " algorithms were not uploaded because an algorithm",
+                        "of the same name already exists, and overwriting data in the public repository is not yet",
+                        "supported."))
+})
+
 # remove all uploaded data set
 observeEvent(input$upload.remove_data, {
   if (length(DataList$data) != 0) {
-    DataList$data <- DataSetList() # must be a 'DataSetList'
+    DataList$data <- DataSetList() # NOTE: this must be a `DataSetList` object
     unlink(folderList$data, T)
     folderList$data <- list()
+
+    updateSelectInput(session, 'Overall.Dim', choices = c(), selected = '')
+    updateSelectInput(session, 'Overall.Funcid', choices = c(), selected = '')
+
     print_html('<p style="color:red;">all data are removed!</p>')
     print_html('', 'upload_data_promt')
-
   }
 })
 
@@ -447,10 +434,39 @@ observe({
   # updateSelectInput(session, 'Report.Param.Statistics-DIM', choices = DIMs, selected = selected_dim)
   # updateSelectInput(session, 'Report.Param.Statistics-Alg', choices = algIds_, selected = algIds_)
   
+  updateSelectInput(session, 'RTportfolio.Shapley.Algs', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RTportfolio.Shapley.Funcs', choices = funcIds, selected = funcIds)
+  updateSelectInput(session, 'RTportfolio.Shapley.Dims', choices = DIMs, selected = DIMs)
+  updateNumericInput(session, 'RTportfolio.Shapley.Permsize', min = 2, max = length(algIds_),
+                     value = min(10, length(algIds_)))
+
+
+  updateSelectInput(session, 'RT.MultiERT.AlgId', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RT.MultiERT.FuncId', choices = funcIds, selected = funcIds)
+  updateSelectInput(session, 'RT.MultiERT.DIM', choices = DIMs, selected = selected_dim)
+  updateSelectInput(session, 'RT.Multisample.AlgId', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RT.Multisample.FuncId', choices = funcIds, selected = funcIds)
+  updateSelectInput(session, 'RT.Multisample.DIM', choices = DIMs, selected = selected_dim)
+
+  updateSelectInput(session, 'FV.MultiFV.AlgId', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FV.MultiFV.FuncId', choices = funcIds, selected = funcIds)
+  updateSelectInput(session, 'FV.MultiFV.DIM', choices = DIMs, selected = selected_dim)
+  updateSelectInput(session, 'FV.Multisample.AlgId', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FV.Multisample.FuncId', choices = funcIds, selected = funcIds)
+  updateSelectInput(session, 'FV.Multisample.DIM', choices = DIMs, selected = selected_dim)
+
   updateSelectInput(session, 'RT_Stats.Glicko.Algid', choices = algIds_, selected = algIds_)
   updateSelectInput(session, 'RT_Stats.Glicko.Funcid', choices = funcIds, selected = selected_f)
   updateSelectInput(session, 'RT_Stats.Glicko.Dim', choices = DIMs, selected = selected_dim)
+  
+  updateSelectInput(session, 'RT_Stats.DSC.Algid', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'RT_Stats.DSC.Funcid', choices = funcIds, selected = funcIds)
+  updateSelectInput(session, 'RT_Stats.DSC.Dim', choices = DIMs, selected = DIMs)
 
+  updateSelectInput(session, 'FV_Stats.DSC.Algid', choices = algIds_, selected = algIds_)
+  updateSelectInput(session, 'FV_Stats.DSC.Funcid', choices = funcIds, selected = funcIds)
+  updateSelectInput(session, 'FV_Stats.DSC.Dim', choices = DIMs, selected = DIMs)  
+  
   updateSelectInput(session, 'RT_Stats.Overview.Algid', choices = algIds_, selected = algIds_)
 
   updateSelectInput(session, 'FV_Stats.Glicko.Algid', choices = algIds_, selected = algIds_)
@@ -501,6 +517,7 @@ observe({
 DATA <- reactive({
   dim <- input$Overall.Dim
   id <- input$Overall.Funcid
+  req(dim, id)
 
   if (length(DataList$data) == 0) return(NULL)
 
@@ -570,8 +587,6 @@ observe({
   fseq <- seq_FV(v, length.out = length.out)
   start <- fseq[1]
   stop <- fseq[length.out]
-  # s <- ((stop - start) * 0.1 + start)
-  # e <- ((stop - start) * 0.9 + start)
 
   #TODO: Make more general
   if (abs(2 * fseq[3] - fseq[2] - fseq[4]) < 1e-12) #arbitrary precision
@@ -607,6 +622,8 @@ observe({
   setTextInput(session, 'RT_PAR.Sample.Max', name, alternative = format_FV(stop))
   setTextInput(session, 'RT_PAR.Sample.Step', name, alternative = format_FV(step))
   setTextInput(session, 'RT_Stats.Overview.Target', name, alternative = format_FV(stop))
+  setTextInput(session, 'RT.Multisample.Target', name, alternative = format_FV(median(v)))
+  setTextInput(session, 'RT.MultiERT.Target', name, alternative = format_FV(median(v)))
 })
 
 # update the values for the grid of running times
@@ -614,8 +631,6 @@ observe({
   data <- DATA()
   v <- get_runtimes(data)
   name <- get_data_id(data)
-  # s <- ((max(v) - min(v)) * 0.05 + min(v)) %>% as.integer
-  # e <- ((max(v) - min(v)) * 0.95 + min(v)) %>% as.integer
 
   if (length(v) == 0) return()
 
@@ -627,7 +642,8 @@ observe({
 
   start <- min(v)
   stop <- max(v)
-
+  setTextInput(session, 'FV.Multisample.Target', name, alternative = max(v))
+  setTextInput(session, 'FV.MultiFV.Target', name, alternative = max(v))
   setTextInput(session, 'FCESummary.Statistics.Min', name, alternative = min(v))
   setTextInput(session, 'FCESummary.Statistics.Max', name, alternative = max(v))
   setTextInput(session, 'FCESummary.Statistics.Step', name, alternative = step)
@@ -656,3 +672,11 @@ observe({
   #TODO: remove q and replace by single number
   setTextInput(session, 'FCEECDF.Single.Target', name, alternative = q[2])
 })
+
+output$upload.Download_processed <- downloadHandler(
+  filename = "DataSetList.rds",
+  content = function(file) {
+    saveRDS(DATA_RAW(), file = file)
+  }
+)
+

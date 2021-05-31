@@ -1,7 +1,7 @@
 Package: IOHanalyzer
 Type: Package
 Title: Data Analysis Part of 'IOHprofiler'
-Version: 0.1.4
+Version: 0.1.5.2
 Author: Hao Wang [cre, aut],
   Diederick Vermetten [aut],
   Carola Doerr [aut],
@@ -24,16 +24,16 @@ LazyData: true
 URL: http://iohprofiler.liacs.nl,
         https://github.com/IOHprofiler/IOHAnalyzer
 BugReports: https://github.com/IOHprofiler/IOHAnalyzer/issues
-Imports: Rcpp, magrittr, dplyr, data.table, ggplot2, plotly,
-        colorspace, colorRamps, RColorBrewer, shiny, markdown,
-        reshape2, shinyjs, colourpicker, bsplus, DT, igraph,
-        kableExtra, PlayerRatings, stringi
+Imports: magrittr, dplyr, data.table, ggplot2, plotly, colorspace,
+        colorRamps, RColorBrewer, shiny, markdown, reshape2, shinyjs,
+        colourpicker, bsplus, DT, kableExtra, stringi, httr, knitr
 LinkingTo: Rcpp
 SystemRequirements: C++11
 RoxygenNote: 7.0.0
-Suggests: testthat, withr, shinydashboard
+Suggests: Rcpp, testthat, withr, shinydashboard, ComplexHeatmap, grid,
+        keyring, PlayerRatings, xtable, igraph
 Depends: R (>= 2.10)
 NeedsCompilation: yes
-Packaged: 2020-06-24 12:53:49 UTC; diedi
+Packaged: 2021-05-31 15:01:12 UTC; diedi
 Repository: CRAN
-Date/Publication: 2020-06-24 17:50:02 UTC
+Date/Publication: 2021-05-31 15:40:02 UTC
