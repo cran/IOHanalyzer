@@ -5,11 +5,11 @@ rt_ecdf_single_target_box <- function(width = 12, collapsible = T, collapsed = T
       sidebarLayout(
         sidebarPanel(
           width = 3,
-          selectInput('RTECDF.Single.Algs', label = 'Select which algorithms to plot:',
+          selectInput('RTECDF.Single.Algs', label = 'Select which IDs to include:',
                       multiple = T, selected = NULL, choices = NULL) %>% shinyInput_label_embed(
                         custom_icon() %>%
                           bs_embed_popover(
-                            title = "Algorithm selection", content = alg_select_info, 
+                            title = "ID selection", content = alg_select_info, 
                             placement = "auto"
                           )
                       ),   
@@ -48,11 +48,11 @@ rt_ecdf_agg_targets_box <- function(width = 12, collapsible = T, collapsed = T) 
     solidHeader = T, status = "primary",
     sidebarPanel(
       width = 3,
-      selectInput('RTECDF.Multi.Algs', label = 'Select which algorithms to plot:',
+      selectInput('RTECDF.Multi.Algs', label = 'Select which IDs to include:',
                   multiple = T, selected = NULL, choices = NULL) %>% shinyInput_label_embed(
                     custom_icon() %>%
                       bs_embed_popover(
-                        title = "Algorithm selection", content = alg_select_info, 
+                        title = "ID selection", content = alg_select_info, 
                         placement = "auto"
                       )
                   ),   
@@ -106,21 +106,28 @@ rt_ecdf_agg_fct_box <- function(width = 12, collapsible = T, collapsed = T) {
       width = 3,
       selectInput(
         'RTECDF.Aggr.Algs',
-        label = 'Select which algorithms to plot:',
+        label = 'Select which IDs to include:',
         multiple = T, 
         selected = NULL, 
         choices = NULL
         ) %>% shinyInput_label_embed(
           custom_icon() %>%
             bs_embed_popover(
-              title = "Algorithm selection", content = alg_select_info, 
+              title = "ID selection", content = alg_select_info, 
               placement = "auto"
             )
           ),
         
       checkboxInput("RTECDF.Aggr.Func", "Aggregate functions", value = T),
+      conditionalPanel(condition = 'input["RTECDF.Aggr.Func"]', 
+                       selectInput('RTECDF.Aggr.FuncIds', label = "Functions to include:",
+                                    selected = NULL, choices = NULL, multiple = T)
+      ),
       checkboxInput("RTECDF.Aggr.Dim", "Aggregate dimensions", value = F),
-      checkboxInput("RTECDF.Aggr.Logx", "Scale x axis \\(\\log_{10}\\)", value = T),
+      conditionalPanel(condition = 'input["RTECDF.Aggr.Dim"]', 
+                       selectInput('RTECDF.Aggr.DIMS', label = "Dimsensions to include:",
+                                   selected = NULL, choices = NULL, multiple = T)
+      ),      checkboxInput("RTECDF.Aggr.Logx", "Scale x axis \\(\\log_{10}\\)", value = T),
       checkboxInput("RTECDF.Aggr.Logy", "Scale y axis \\(\\log_{10}\\)", value = F) %>% 
         shinyInput_label_embed(
           custom_icon() %>%
@@ -218,11 +225,11 @@ rt_ecdf_agg_fct_box <- function(width = 12, collapsible = T, collapsed = T) {
 #     solidHeader = T, status = "primary",
 #     sidebarPanel(
 #       width = 3,
-#       selectInput('RTECDF.AUC.Algs', label = 'Select which algorithms to plot:',
+#       selectInput('RTECDF.AUC.Algs', label = 'Select which IDs to include:',
 #                   multiple = T, selected = NULL, choices = NULL) %>% shinyInput_label_embed(
 #                     custom_icon() %>%
 #                       bs_embed_popover(
-#                         title = "Algorithm selection", content = alg_select_info, 
+#                         title = "ID selection", content = alg_select_info, 
 #                         placement = "auto"
 #                       )
 #                   ),     

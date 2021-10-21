@@ -95,6 +95,8 @@ read_index_file__IOH <- function(fname) {
       }
 
     record <- trimws(strsplit(lines[3], ',')[[1]])
+    
+    has_dynattr <- !is.null(header$dynamicAttribute)
 
     # TODO: this must also be removed...
     if (record[2] == "") {
@@ -108,25 +110,39 @@ read_index_file__IOH <- function(fname) {
       #Check for incorrect usages of reset_problem and remove them
       maxRTs <- as.numeric(info[1,])
       idx_correct <- which(maxRTs > 0)
-      finalFVs <- as.numeric(info[2,])[idx_correct]
+      info_split <- strsplit(info[2,], ';')
+      finalFVs <- as.numeric(info_split[[1]][[1]])[idx_correct]
       instances <- as.numeric(res[1,])[idx_correct]
+      if (has_dynattr){
+        dynamic_attrs <- info_split[[1]][[2]]
+        dynamic_attrs <- dynamic_attrs[idx_correct]
+      }
       maxRTs <- maxRTs[idx_correct]
     }
     
     record[1] <- gsub("\\\\", "/", record[1])
     datafile <- file.path(path, record[1])
+    
+    attr_list = list(
+      comment = lines[2],
+      datafile = datafile,
+      instance = instances,
+      maxRT = maxRTs,
+      finalFV = finalFVs
+    )
+    
+    
+    
+    if (has_dynattr){
+      attr_list[header$dynamicAttribute] = dynamic_attrs
+    }
 
-    # TODO: check the name of the attributes and fix them!
+    # TODO: Make this code more readable
     data[[i]] <- c(
       header,
-      list(
-        comment = lines[2],
-        datafile = datafile,
-        instance = instances,
-        maxRT = maxRTs,
-        finalFV = finalFVs
-      )
+      attr_list
     )
+    
     i <- i + 1
   }
   close(f)
@@ -743,7 +759,12 @@ read_single_file_SOS <- function(file) {
   }
   
   dim <- as.numeric(info$DIM)
-  
+  #Hardcoded fix for SB-related data
+  if (is.null(dim) || length(dim) == 0) {
+    warning("Dimension not explicitly defined, setting as 30 by default")
+    dim <- 30
+    info$DIM <- dim
+  }
   
   RT_raw <- dt[[colnames(dt)[[ncol(dt) - dim - 1]]]]
   names(RT_raw) <- dt[[colnames(dt)[[ncol(dt) - dim - 2]]]]
@@ -761,24 +782,31 @@ read_single_file_SOS <- function(file) {
   maxRT <- max(RT)
   finalFV <- min(FV)
   
-  if (sum(FV == finalFV) > 1) {
-    #Reconstruct population to determine which best solution is final position
-    ids_min <- dt[FV_raw == finalFV, V1]
-    replaced_idxs <- dt[[colnames(dt)[[ncol(dt) - dim]]]]
-    #If none, take the last one added
-    pos_idx <- max(ids_min)
-    for (i in ids_min) {
-      if (all(replaced_idxs != i)) {
-        #If multiple, take the first one added
-        pos_idx <- i
-        break
-      }
-    }
-    final_pos <- as.numeric(pos[pos_idx, ])
-  }
-  else {
-    final_pos <- as.numeric(pos[which.min(FV), ])
-  }
+  idxs_avail <- dt[['V1']]
+  idxs_replaced <- dt[['V6']]
+  
+  idxs_final <- setdiff(idxs_avail, idxs_replaced)
+  
+  idx_final_best <- idxs_final[[which.min(FV[idxs_final])]]
+  final_pos <- as.numeric(pos[idx_final_best, ])
+  # if (sum(FV == finalFV) > 1) {
+  #   #Reconstruct population to determine which best solution is final position
+  #   ids_min <- dt[FV_raw == finalFV, V1]
+  #   replaced_idxs <- dt[[colnames(dt)[[ncol(dt) - dim]]]]
+  #   #If none, take the last one added
+  #   pos_idx <- max(ids_min)
+  #   for (i in ids_min) {
+  #     if (all(replaced_idxs != i)) {
+  #       #If multiple, take the first one added
+  #       pos_idx <- i
+  #       break
+  #     }
+  #   }
+  #   final_pos <- as.numeric(pos[pos_idx, ])
+  # }
+  # else {
+  #   final_pos <- as.numeric(pos[which.min(FV), ])
+  # }
   
   PAR <- list(
     # 'position' = list(pos),
@@ -802,6 +830,7 @@ read_single_file_SOS <- function(file) {
   for (i in seq_along(info)) {
     attr(object, names(info)[[i]]) <- type.convert(info[[i]], as.is = T)
   }
+  attr(object, 'ID') <- attr(object, 'algId')
   object
 }
 
@@ -863,6 +892,7 @@ read_datasetlist_SOS <- function(dir, corrections_files = NULL) {
   attr(res, 'DIM') <- dims
   attr(res, 'funcId') <- funcIds
   attr(res, 'algId') <- algIds
+  attr(res, 'ID_attributes') <- c('algId')
   
   suite <- unique(suites)
   maximization <- unique(maximizations)

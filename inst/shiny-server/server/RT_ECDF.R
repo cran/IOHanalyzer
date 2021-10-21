@@ -6,13 +6,17 @@ output$RT_ECDF_MULT <- renderPlotly({
 get_data_RT_ECDF_MULT <- reactive({
   req(input$RTECDF.Aggr.Func || input$RTECDF.Aggr.Dim)
   input$RTECDF.Aggr.Refresh
-  dsList <- subset(DATA_RAW(), algId %in% input$RTECDF.Aggr.Algs)
+  dsList <- subset(DATA_RAW(), ID %in% input$RTECDF.Aggr.Algs)
   
   if (!input$RTECDF.Aggr.Func) 
     dsList <- subset(dsList, funcId == input$Overall.Funcid)
+  else 
+    dsList <- subset(dsList, funcId %in% input$RTECDF.Aggr.FuncIds)
   
   if (!input$RTECDF.Aggr.Dim) 
     dsList <- subset(dsList, DIM == input$Overall.Dim)
+  else 
+    dsList <- subset(dsList, DIM %in% input$RTECDF.Aggr.DIMS)
   
   if (length(dsList) <= 1) {
     shinyjs::alert("This is an invalid configuration for this plot. \n
@@ -65,7 +69,7 @@ observe({
   req(dim)
   # req(data$suite != NEVERGRAD)
 
-  dsList <- subset(data, algId %in% alg)
+  dsList <- subset(data, ID %in% alg)
   req(length(dsList) > 0)
 
   if (!input$RTECDF.Aggr.Func) 
@@ -182,7 +186,7 @@ output$RTECDF.Aggr.Table.Download <- downloadHandler(
 
 get_data_RT_ECDF_Single <- reactive({
   ftargets <- as.numeric(format_FV(input$RTECDF.Single.Target))
-  data <- subset(DATA(), algId %in% input$RTECDF.Single.Algs)
+  data <- subset(DATA(), ID %in% input$RTECDF.Single.Algs)
   generate_data.ECDF(data, ftargets, input$RTECDF.Single.Logx)
 })
 
@@ -241,7 +245,7 @@ get_data_RT_ECDF_AGGR <- reactive({
   fstart <- format_FV(input$RTECDF.Multi.Min) %>% as.numeric
   fstop <- format_FV(input$RTECDF.Multi.Max) %>% as.numeric
   fstep <- format_FV(input$RTECDF.Multi.Step) %>% as.numeric
-  data <- subset(DATA(), algId %in% input$RTECDF.Multi.Algs)
+  data <- subset(DATA(), ID %in% input$RTECDF.Multi.Algs)
   targets <- seq_FV(get_funvals(data), fstart, fstop, fstep)
   generate_data.ECDF(data, targets, input$RTECDF.Multi.Logx)
 })
