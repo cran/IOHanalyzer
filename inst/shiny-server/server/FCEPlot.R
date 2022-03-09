@@ -106,7 +106,7 @@ get_data_FCEPlot_multi <- reactive({
   data <- subset(DATA_RAW(),
                  DIM == input$Overall.Dim)
   if (length(get_id(data)) < 20 & length(get_funcId(data)) < 30) {
-    get_data_ERT_multi_func_bulk()[(ID %in% isolate(input$FCEPlot.Multi.Algs)) &
+    get_data_FCE_multi_func_bulk()[(ID %in% isolate(input$FCEPlot.Multi.Algs)) &
                                      (funcId %in% isolate(input$FCEPlot.Multi.Funcs)), ]
   }
   else {
@@ -126,7 +126,7 @@ render_FCEPlot_multi_plot <- reactive({
   plot_general_data(get_data_FCEPlot_multi(), x_attr = 'runtime', y_attr = 'mean', 
                     subplot_attr = 'funcId', type = 'line', scale.xlog = input$FCEPlot.Multi.Logx, 
                     scale.ylog = input$FCEPlot.Multi.Logy, x_title = 'Function Evaluations', 
-                    y_title = 'Best-so-far f(x)', show.legend = T)
+                    y_title = 'Best-so-far f(x)', show.legend = T, subplot_shareX = T)
   },
   message = "Creating plot")
 })
