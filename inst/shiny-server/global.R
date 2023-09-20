@@ -106,6 +106,7 @@ print_html <- function(s, widget_id = 'process_data_promt')
 
 # download file names: csv, image ---------------------
 AUC_ECDF_aggr_name <- parse(text = "paste0('AUC_ECDF_MULTI.', input$RTECDF.AUC.Table.Format)")
+AUC_EAF_ECDF_aggr_name <- parse(text = "paste0('AUC_EAF.', input$EAF.AUC.Table.Format)")
 overview_single_name <- parse(text = "paste0('Overview-', paste0(input$Overall.Dim, 'D'),
                              paste0('F', input$Overall.Funcid), '.', input$Overview.Single.Format)")
 overview_all_name <- parse(text = "paste0('Overview-All-', '.', input$Overview.All.Format)")
@@ -137,6 +138,8 @@ FCE_multi_func_name <- parse(text = "paste0('MultiFCE-', paste0(input$Overall.Di
                              '.', input$FCEPlot.Aggr.TableFormat)")
 RT_Glicko2_table_name <- parse(text = "paste0('RT_Glicko2', '.', input$RT_Stats.Glicko.TableFormat)")
 RT_Glicko2_figure_name <- parse(text = "paste0('RT_Glicko2', '.', input$RT_Stats.Glicko.Format)")
+FV_Glicko2_table_name <- parse(text = "paste0('FV_Glicko2', '.', input$FV_Stats.Glicko.TableFormat)")
+FV_Glicko2_figure_name <- parse(text = "paste0('FV_Glicko2', '.', input$FV_Stats.Glicko.Format)")
 
 RT_DSC_table_name <- parse(text = "paste0('RT_DSC', '.', input$RT_Stats.DSC.TableFormat)")
 RT_DSC_figure_name <- parse(text = "paste0('RT_DSC', '.', input$RT_Stats.DSC.Format)")
@@ -166,6 +169,8 @@ FIG_NAME_ERT_AGGR <- parse(text = "paste0('ERT_Aggr-', Sys.Date(), '.', input$ER
 FIG_NAME_ERT_AGGR_DIM <- parse(text = "paste0('ERT_Aggr_Dim-', Sys.Date(), '.', input$ERTPlot.Aggr_Dim.Format)")
 FIG_NAME_RT_PMF <- parse(text = "paste0('RT_PMF-', Sys.Date(), '.', input$RTPMF.Bar.Format)")
 FIG_NAME_RT_HIST <- parse(text = "paste0('RT_HIST-', Sys.Date(), '.', input$RTPMF.Hist.Format)")
+FIG_NAME_RT_CDP <- parse(text = "paste0('RT_CDP-', Sys.Date(), '.', input$RTPMF.CDP.Format)")
+
 FIG_NAME_RT_ECDF_AGGR <- parse(text = "paste0('RT_ECDF_AGGR-', Sys.Date(), '.', input$RTECDF.Multi.Format)")
 FIG_NAME_RT_ECDF_MULT <- parse(text = "paste0('RT_ECDF_MULT-', Sys.Date(), '.', input$RTECDF.Aggr.Format)")
 FIG_NAME_RT_AUC <- parse(text = "paste0('RT_AUC-', Sys.Date(), '.', input$RTECDF.AUC.Format)")
@@ -175,6 +180,8 @@ FIG_NAME_FV_PER_FUN_MULTI <- parse(text = "paste0('FCE_Mult-', Sys.Date(), '.', 
 FIG_NAME_FV_AGGR <- parse(text = "paste0('FCE_Aggr-', Sys.Date(), '.', input$FCEPlot.Aggr.Format)")
 FIG_NAME_FV_PDF <- parse(text = "paste0('FV_PMF-', Sys.Date(), '.', input$FCEPDF.Bar.Format)")
 FIG_NAME_FV_HIST <- parse(text = "paste0('FV_HIST-', Sys.Date(), '.', input$FCEPDF.Hist.Format)")
+FIG_NAME_FV_CDP <- parse(text = "paste0('FV_CDP-', Sys.Date(), '.', input$FCEPDF.CDP.Format)")
+FIG_NAME_FV_ECDF_SINGLE <- parse(text = "paste0('FV_ECDF_Single-', Sys.Date(), '.', input$FCEECDF.Single.Format)")
 FIG_NAME_FV_ECDF_AGGR <- parse(text = "paste0('FV_ECDF_AGGR-', Sys.Date(), '.', input$FCEECDF.Mult.Format)")
 FIG_NAME_FV_AUC <- parse(text = "paste0('FV_AUC-', Sys.Date(), '.', input$FCEECDF.AUC.Format)")
 
@@ -184,6 +191,12 @@ FIG_NAME_FV_PAR_PER_FUN <- parse(text = "paste0('FV_PAR-', Sys.Date(), '.', inpu
 FIG_NAME_RT_SHAPLEY <- parse(text = "paste0('RT-Shapley-', Sys.Date(), '.', input$RTportfolio.Shapley.Format)")
 RT_NG_heatmap_name <- parse(text = "paste0('RT-NG_Heatmap-', Sys.Date(), '.', input$RT_NG.Heatmap.Format)")
 FV_NG_heatmap_name <- parse(text = "paste0('FV-NG_Heatmap-', Sys.Date(), '.', input$FV_NG.Heatmap.Format)")
+
+FIG_NAME_EAF <- parse(text = "paste0('EAF-', Sys.Date(), '.', input$EAF.Single.Format)")
+FIG_NAME_EAFCDF <- parse(text = "paste0('EAFCDF-', Sys.Date(), '.', input$EAF.CDF.Format)")
+FIG_NAME_EAFDiff <- parse(text = "paste0('EAFDiff-', Sys.Date(), '.', input$EAF.Diff.Format)")
+FIG_NAME_EAFMultiCDF <- parse(text = "paste0('EAF_multiCDF-', Sys.Date(), '.', input$EAF.MultiCDF.Format)")
+AUC_ECDFEAF_aggr_name <- parse(text = "paste0('AUC_ECDFEAF_MULTI.', input$RTECDF.AUC.Table.Format)")
 
 # ID of the control widget, whose current value should de always recorded and restored ----
 # those control widget are switched on and off
@@ -228,6 +241,7 @@ widget_id <- c('RTSummary.Statistics.Min',
                'FCESummary.Sample.Max',
                'FCESummary.Sample.Step',
                'FCEPDF.Hist.Runtime',
+               'FCEPDF.CDP.Runtime',
                'FCEPDF.Bar.Runtime',
                'FCEPlot.Min',
                'FCEPlot.Max',
@@ -237,7 +251,16 @@ widget_id <- c('RTSummary.Statistics.Min',
                'FCEECDF.AUC.Min',
                'FCEECDF.AUC.Max',
                'FCEECDF.AUC.Step',
-               'FCEECDF.Single.Target')
+               'FCEECDF.Single.Target',
+               'EAF.Single.Min',
+               'EAF.Single.Max',
+               'EAF.Single.yMin',
+               'EAF.Single.yMax',
+               'EAF.CDF.yMin',
+               'EAF.CDF.yMax',
+               'EAF.Diff.yMin',
+               'EAF.Diff.yMax'
+               )
 
 eventExpr <- parse(text = paste0('{', paste(paste0('input$', widget_id), collapse = "\n"), '}'))
 

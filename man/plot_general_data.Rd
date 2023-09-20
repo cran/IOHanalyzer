@@ -23,7 +23,10 @@ plot_general_data(
   show.legend = F,
   inf.action = "none",
   violin.showpoints = F,
+  frame_attr = "frame",
+  symbol_attr = "run_nr",
   subplot_shareX = F,
+  line.step = F,
   ...
 )
 }
@@ -68,7 +71,13 @@ Only works in combination with`upper_attr` and `type` == 'ribbon'}
 
 \item{violin.showpoints}{Wheteher or not to show individual points when making a violinplot}
 
+\item{frame_attr}{Which attribute of the dataframe to use for the time element of the animation}
+
+\item{symbol_attr}{Which attribute of the dataframe to use for the scatter symbol}
+
 \item{subplot_shareX}{Whether or not to share X-axis when using subplots}
+
+\item{line.step}{Whether to plot lines as a step-function (T) or as linear interpolation (F, default)}
 
 \item{...}{Additional parameters for the add_trace function}
 }

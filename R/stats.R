@@ -167,15 +167,22 @@ pairwise.test.DataSetList <- function(x, ftarget, bootstrap.size = 0, which = 'b
 #' @param scale Scaling of the sequence. Can be either 'linear' or 'log', indicating a
 #'   linear or log-linear spacing respectively. If NULL, the scale will be predicted
 #'   based on FV
+#' @param force_limits Whether the from and to values are hard, or should be modified
+#' based on detected FV values (default False)
 #'
 #' @return A sequence of function values
 #' @export
 #' @examples
 #' FVall <- get_runtimes(dsl)
 #' seq_FV(FVall, 10, 16, 1, scale='linear')
-seq_FV <- function(FV, from = NULL, to = NULL, by = NULL, length.out = NULL, scale = NULL) {
-  from <- max(from, min(FV))
-  to <- min(to, max(FV))
+seq_FV <- function(FV, from = NULL, to = NULL, by = NULL, length.out = NULL, scale = NULL, force_limits = FALSE) {
+
+  if (is.null(from) || !force_limits){
+    from <- max(from, min(FV))
+  }
+  if (is.null(to) || !force_limits){
+    to <- min(to, max(FV))
+  }
 
   rev_trans <- function(x) x
 
@@ -195,8 +202,8 @@ seq_FV <- function(FV, from = NULL, to = NULL, by = NULL, length.out = NULL, sca
     rev_trans <- function(x) 10 ^ x
     # TODO: Better way to deal with negative values
     #       set lowest possible target globally instead of arbitrary 1e-12
-    from <- max(1e-12, from)
-    to <- max(1e-12 ,to)
+    from <- max(1e-12, from[from>0])
+    to <- max(1e-12 ,to[to>0])
     from <- trans(from)
     to <- trans(to)
   }
@@ -562,13 +569,18 @@ glicko2_ranking <- function(dsl, nr_rounds = 100, which = 'by_FV', target_dt = N
           x_arr <- get_FV_sample(dsl_s, target)
           win_operator <- ifelse(attr(dsl, 'maximization'), `>`, `<`)
         }
+        if (is.null(alg_names)) alg_names <- x_arr[,3]
         vals = array(dim = c(n_algs,ncol(x_arr) - 4))
         for (i in seq(1,n_algs)) {
+          ds <- subset(dsl_s, algId == alg_names[i][[1]])
+          n_valid <- length(attr(ds[[1]], 'instance'))
+
           z <- x_arr[i]
           y <- as.numeric(z[,5:ncol(x_arr)])
-          vals[i,] = y
+
+
+          vals[i,] = sample(y[1:n_valid], length(vals[i,]), replace = TRUE)
         }
-        if (is.null(alg_names)) alg_names <- x_arr[,3]
 
         for (i in seq(1,n_algs)) {
           for (j in seq(i,n_algs)) {
@@ -726,6 +738,7 @@ set_DSC_credentials <- function(username, password) {
             paste0(repo_dir, "/config.rds"))
   }
   else {
+    keyring::keyring_unlock(password="")
     keyring::key_set_with_value("DSCtool", password = password)
     keyring::key_set_with_value("DSCtool_name", password = username)
   }
@@ -749,6 +762,7 @@ get_DSC_credentials <- function() {
     return(list(name = data$DSCusername, pwd = data$DSCpassword))
   }
   else {
+    keyring::keyring_unlock(password="")
     return(list(name = keyring::key_get("DSCtool_name"),
                 pwd = keyring::key_get("DSCtool")))
   }
@@ -820,7 +834,7 @@ convert_to_dsc_compliant <- function(dsList, targets = NULL, which = 'by_RT',
       return(list(name = paste0("F", attr(ds, 'funcId'), "_", attr(ds, 'DIM'),"D"),
                   data = data))
     })
-    return(list(ID = id, problems = problems))
+    return(list(algorithm = id, problems = problems))
   })
 
 
@@ -854,7 +868,7 @@ convert_to_dsc_compliant <- function(dsList, targets = NULL, which = 'by_RT',
 #'
 #' @export
 #' @examples
-#' get_dsc_rank(dsl)
+#' get_dsc_rank(dsl, na.correction = 'PAR-10')
 get_dsc_rank <- function(dsList, targets = NULL, which = 'by_RT', test_type = "AD", alpha = 0.05,
                          epsilon = 0, monte_carlo_iterations = 0, na.correction = NULL) {
   if (!check_dsc_configured()) return(NULL)
@@ -886,7 +900,7 @@ get_dsc_rank <- function(dsList, targets = NULL, which = 'by_RT', test_type = "A
 #'
 #' @export
 #' @examples
-#' get_dsc_omnibus(get_dsc_rank(dsl))
+#' get_dsc_omnibus(get_dsc_rank(dsl, na.correction = 'PAR-10'))
 get_dsc_omnibus <- function(res, method = NULL, alpha = 0.05) {
   if (!check_dsc_configured()) return(NULL)
   if (is.null(method)) method <- res$valid_methods[[1]]
@@ -924,7 +938,7 @@ get_dsc_omnibus <- function(res, method = NULL, alpha = 0.05) {
 #'
 #' @export
 #' @examples
-#' get_dsc_posthoc(get_dsc_omnibus(get_dsc_rank(dsl)), 2, 2)
+#' get_dsc_posthoc(get_dsc_omnibus(get_dsc_rank(dsl, na.correction = 'PAR-10')), 2, 2)
 get_dsc_posthoc <- function(omni_res, nr_algs, nr_problems, base_algorithm = NULL,
                             method = "friedman", alpha = 0.05) {
   if (!check_dsc_configured()) return(NULL)
@@ -987,7 +1001,9 @@ get_marg_contrib_ecdf <- function(id, perm, j, dt) {
 #'
 #' @export
 #' @examples
-#' get_shapley_values(dsl, get_ECDF_targets(dsl))
+#' \dontshow{data.table::setDTthreads(1)}
+#' dsl_sub <- subset(dsl, funcId == 1)
+#' get_shapley_values(dsl_sub, get_ECDF_targets(dsl_sub), group_size = 2)
 get_shapley_values <- function(dsList, targets, scale.log = T, group_size = 5, max_perm_size = 10, normalize = T){
   hit <- NULL #Bind to avoid notes
   ids_full <- get_id(dsList)

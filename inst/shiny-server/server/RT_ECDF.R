@@ -38,7 +38,7 @@ render_RT_ECDF_MULT <- reactive({
                       scale.ylog = input$RTECDF.Aggr.Logy,
                       x_title = "Function Evaluations",
                       y_title = "Proportion of (run, target, ...) pairs",
-                      show.legend = T)
+                      show.legend = T, line.step = T)
   },
   message = "Creating plot")
 })
@@ -194,7 +194,9 @@ output$RT_ECDF <- renderPlotly({
   req(input$RTECDF.Single.Target)
   plot_general_data(get_data_RT_ECDF_Single(), 'x', 'mean', 'line',
                     x_title = "Function Evaluations",
-                    y_title = "Proportion of runs", scale.xlog = input$RTECDF.Single.Logx, show.legend = T)
+                    y_title = "Proportion of runs",
+                    scale.xlog = input$RTECDF.Single.Logx, show.legend = T,
+                    line.step = T)
   # ftargets <- as.numeric(format_FV(input$RTECDF.Single.Target))
   # data <- subset(DATA(), algId %in% input$RTECDF.Single.Algs)
   # Plot.RT.ECDF_Per_Target(data, ftargets, scale.xlog = input$RTECDF.Single.Logx)
@@ -215,15 +217,7 @@ output$AUC_GRID_GENERATED_FUNC <- DT::renderDataTable({
 output$RT_GRID <- renderPrint({
   req(input$RTECDF.Multi.Min, input$RTECDF.Multi.Max, input$RTECDF.Multi.Step)
 
-  fstart <- format_FV(input$RTECDF.Multi.Min) %>% as.numeric
-  fstop <- format_FV(input$RTECDF.Multi.Max) %>% as.numeric
-  fstep <- format_FV(input$RTECDF.Multi.Step) %>% as.numeric
-
-  req(fstart <= fstop, fstep <= fstop - fstart)
-  data <- DATA()
-  fall <- get_funvals(data)
-
-  cat(seq_FV(fall, fstart, fstop, by = fstep))
+  cat(get_RT_ECDF_AGGR_Targets())
 })
 
 output$RT_ECDF_AGGR <- renderPlotly({
@@ -240,13 +234,23 @@ output$RTECDF.Multi.Download <- downloadHandler(
   contentType = paste0('image/', input$RTECDF.Multi.Format)
 )
 
-get_data_RT_ECDF_AGGR <- reactive({
-  req(input$RTECDF.Multi.Min, input$RTECDF.Multi.Max, input$RTECDF.Multi.Step)
+get_RT_ECDF_AGGR_Targets <- function() {
   fstart <- format_FV(input$RTECDF.Multi.Min) %>% as.numeric
   fstop <- format_FV(input$RTECDF.Multi.Max) %>% as.numeric
   fstep <- format_FV(input$RTECDF.Multi.Step) %>% as.numeric
+
+  req(fstart <= fstop, fstep <= fstop - fstart)
   data <- subset(DATA(), ID %in% input$RTECDF.Multi.Algs)
-  targets <- seq_FV(get_funvals(data), fstart, fstop, fstep)
+  fall <- get_funvals(data)
+
+  return(seq_FV(fall, fstart, fstop, by = fstep, force_limits = T))
+}
+
+get_data_RT_ECDF_AGGR <- reactive({
+  req(input$RTECDF.Multi.Min, input$RTECDF.Multi.Max, input$RTECDF.Multi.Step)
+
+  data <- subset(DATA(), ID %in% input$RTECDF.Multi.Algs)
+  targets <- get_RT_ECDF_AGGR_Targets()
   generate_data.ECDF(data, targets, input$RTECDF.Multi.Logx)
 })
 
@@ -256,7 +260,8 @@ render_RT_ECDF_AGGR <- reactive({
     plot_general_data(get_data_RT_ECDF_AGGR(), 'x', 'mean', 'line',
                       x_title = "Function Evaluations",
                       y_title = "Proportion of (run, target) pairs",
-                      scale.xlog = input$RTECDF.Multi.Logx, show.legend = T)
+                      scale.xlog = input$RTECDF.Multi.Logx, show.legend = T,
+                      line.step = T)
 
   # Plot.RT.ECDF_Single_Func(
   #   data, fstart, fstop, fstep,

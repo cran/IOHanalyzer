@@ -11,7 +11,8 @@ generate_data.Single_Function(
   scale_log = F,
   which = "by_RT",
   include_opts = F,
-  budget = NULL
+  budget = NULL,
+  include_geom_mean = F
 )
 }
 \arguments{
@@ -30,6 +31,9 @@ the generated datapoints}
 
 \item{budget}{Optional; overwrites the budget of each individual algorithm when doing ERT calculations. Only works
 in fixed_target mode.}
+
+\item{include_geom_mean}{Boolean to indicate whether to include the geometric mean.
+Only works in fixed_budget mode. Negative values cause NaN, zeros cause output to be completely 0. Defaults to False.}
 }
 \description{
 This function generates a dataframe which can be easily plotted using the `plot_general_data`-function

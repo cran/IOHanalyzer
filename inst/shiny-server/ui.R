@@ -293,12 +293,6 @@ body <- dashboardBody(
     )
   ),
 
-  if (suppressWarnings(require("dashboardthemes", quietly = T))) {
-    shinyDashboardThemes(
-      theme = "grey_light"
-    )
-  },
-
   # load MathJax
   # TODO: download MathJax and its license and include it in our package
   HTML("<head><script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML'
@@ -401,7 +395,8 @@ body <- dashboardBody(
         column(
           width = 12,
           rt_histogram_box(collapsed = F),
-          rt_pmf_box()
+          rt_pmf_box(),
+          rt_CDP_box()
         )
       )
     ),
@@ -531,7 +526,8 @@ body <- dashboardBody(
         column(
           width = 12,
           fv_histgram_box(collapsed = F),
-          fv_pdf_box()
+          fv_pdf_box(),
+          fv_CDP_box(collapsed = T)
         )
       )
     ),
@@ -549,6 +545,7 @@ body <- dashboardBody(
       )
     ),
 
+
     # Parameter tab -------
     tabItem(
       tabName = 'FCE_PARAMETER',
@@ -557,6 +554,7 @@ body <- dashboardBody(
           width = 12,
           fv_par_expected_value_box(collapsed = F),
           fv_par_summary_box(),
+          par_scatter_box(collapsed = T),
           fv_par_sample_box()
         )
       )
@@ -607,6 +605,46 @@ body <- dashboardBody(
               column(
                 width = 12,
                 Par_coord_box()
+              )
+            )
+    ),
+    tabItem(tabName = 'EAF',
+            fluidRow(
+              column(
+                width = 12,
+                EAF_box()
+              )
+            )
+    ),
+    tabItem(tabName = 'EAF_Diff',
+            fluidRow(
+              column(
+                width = 12,
+                EAF_Diff_box()
+              )
+            )
+    ),
+    tabItem(tabName = 'EAF_CDF',
+            fluidRow(
+              column(
+                width = 12,
+                EAF_CDF_box()
+              )
+            )
+    ),
+    tabItem(tabName = 'EAF_mult',
+            fluidRow(
+              column(
+                width = 12,
+                EAF_mult_box()
+              )
+            )
+    ),
+    tabItem(tabName = 'EAF_CDF_mult',
+            fluidRow(
+              column(
+                width = 12,
+                EAF_CDF_mult_box()
               )
             )
     ),
