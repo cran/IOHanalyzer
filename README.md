@@ -14,7 +14,7 @@ The __performance analyzer__ for **I**terative **O**ptimization **H**euristics (
 * __Bug reports__: [https://github.com/IOHprofiler/IOHAnalyzer/issues](https://github.com/IOHprofiler/IOHAnalyzer/issues)
 * __Online service__: [https://iohanalyzer.liacs.nl](https://iohanalyzer.liacs.nl)
 * __General Contact__: [mailto:iohprofiler@liacs.leidenuniv.nl](mailto:iohprofiler@liacs.leidenuniv.nl)
-* __Mailing List__: [https://lists.leidenuniv.nl/mailman/listinfo/iohprofiler](https://lists.leidenuniv.nl/mailman/listinfo/iohprofiler)
+* __Mailing List__: Mailing list is currently disabled, we are looking into alternatives
 
 ![](./misc/demo.gif)
 

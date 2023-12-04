@@ -125,7 +125,7 @@ pairwise.test.list <- function(x, max_eval, bootstrap.size = 30, ...) {
 
   p.value.adjust <- p.adjust(as.vector(p.value), method = 'holm')
   p.value <- matrix(p.value.adjust, N, N)
-  colnames(p.value) <- rownames(p.value) <- names(x)
+  colnames(p.value) <- rownames(p.value) <- convert_string_symbols(names(x))
   p.value
 }
 
@@ -152,6 +152,23 @@ pairwise.test.DataSetList <- function(x, ftarget, bootstrap.size = 0, which = 'b
   else stop("Unsupported argument 'which'. Available options are 'by_FV' and 'by_RT'")
 
   return(pairwise.test.list(s, maxRT, bootstrap.size))
+}
+
+#' Replace greek symbols in text to avoid conversion problem in igraph-plots
+#'
+#' @param X Vector of strings in which to replace values
+#' @noRd
+convert_string_symbols <- function(x){
+  symbols <- c("\u03b1",
+               "\u03b2",
+               "\u03b3",
+               "\u03b4",
+               "\u03b5",
+               "\u03bb",
+               "\u03bc")
+  names <-  c("alpha", "beta", "gamma",
+              "delta", "epsilon", "lambda", "mu")
+  return(stri_replace_all_fixed(x, symbols, names, vectorize_all = F))
 }
 
 # TODO: move those two functions to a separate file
