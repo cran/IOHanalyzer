@@ -1,12 +1,11 @@
 #' @importFrom stats dt ecdf integrate median quantile sd rgeom ks.test p.adjust ave
-#' @importFrom grDevices col2rgb colors nclass.FD
+#' @importFrom grDevices col2rgb colors nclass.FD colorRampPalette
 #' @importFrom graphics hist
 #' @importFrom utils data head read.csv tail type.convert write.csv compareVersion
 #' @importFrom dplyr %>% mutate
 #' @importFrom magrittr set_names set_rownames set_colnames %<>% mod
 #' @importFrom colorspace sequential_hcl
 #' @importFrom RColorBrewer brewer.pal
-#' @importFrom colorRamps primary.colors
 #' @importFrom data.table as.data.table rbindlist data.table fread := melt is.data.table
 #' @importFrom data.table setorderv frank setnames rbindlist copy transpose setDT setorder getDTthreads setDTthreads
 #' @importFrom plotly add_annotations add_trace orca plot_ly rename_ subplot layout
@@ -27,12 +26,41 @@
 #' @useDynLib IOHanalyzer
 NULL
 # Ugly hack, but appears to be required to appease CRAN
-utils::globalVariables(c(".", "algId", "run", "ERT", "RT", "group",
-                         "DIM", "Fvalue", "lower", "upper", "target", "format",
-                         "runtime", "parId", "instance", "input", "funcId",
-                         "budget", "dimension", "loss", "name", "optimizer_name",
-                         "rescale", "maxRT", "algnames", ".SD", "function_class",
-                         "ID", "ids", "f(x)", "percentage"))
+utils::globalVariables(
+  c(
+    ".",
+    "algId",
+    "run",
+    "ERT",
+    "RT",
+    "group",
+    "DIM",
+    "Fvalue",
+    "lower",
+    "upper",
+    "target",
+    "format",
+    "runtime",
+    "parId",
+    "instance",
+    "input",
+    "funcId",
+    "budget",
+    "dimension",
+    "loss",
+    "name",
+    "optimizer_name",
+    "rescale",
+    "maxRT",
+    "algnames",
+    ".SD",
+    "function_class",
+    "ID",
+    "ids",
+    "f(x)",
+    "percentage"
+  )
+)
 
 options(shiny.port = 4242)
 
@@ -57,8 +85,10 @@ options(shiny.port = 4242)
     IOHanalyzer.tick_fontsize = 12,
     IOHanalyzer.linewidth = 2,
     IOHanalyzer.markersize = 4,
-    IOHanalyzer.max_colors = 2, #Set to 2 since colorbrewer only works with >= 3 colors
-    IOHanalyzer.orca_use_gpu = TRUE, #Can be disabled to stop orca using gpu-accelleration
+    IOHanalyzer.max_colors = 2,
+    #Set to 2 since colorbrewer only works with >= 3 colors
+    IOHanalyzer.orca_use_gpu = TRUE,
+    #Can be disabled to stop orca using gpu-accelleration
     IOHanalyzer.annotation_x = 0.5,
     IOHanalyzer.annotation_y = 1,
     IOHanalyzer.margin_horizontal = 0.02,
@@ -66,35 +96,52 @@ options(shiny.port = 4242)
     IOHanalyzer.Violation_Function = NULL
   )
   toset <- !(names(op.IOHanalyzer) %in% names(op))
-  if (any(toset)) options(op.IOHanalyzer[toset])
+  if (any(toset))
+    options(op.IOHanalyzer[toset])
 
   invisible()
 }
 
 IOHanalyzer_env <- new.env(parent = emptyenv())
 
-.mean <- function(x) mean(x, na.rm = T)
-.median <- function(x) median(x, na.rm = T)
-.sd <- function(x) sd(x, na.rm = T)
-.sum <- function(x) sum(x, na.rm = T)
+.mean <- function(x)
+  mean(x, na.rm = T)
+.median <- function(x)
+  median(x, na.rm = T)
+.sd <- function(x)
+  sd(x, na.rm = T)
+.sum <- function(x)
+  sum(x, na.rm = T)
 
 # Quantile function for discrete values
 IOHanalyzer_env$D_quantile <- function(x, pct = NULL) {
-  if (is.null(pct)) pct <- getOption("IOHanalyzer.quantiles")
+  if (is.null(pct))
+    pct <- getOption("IOHanalyzer.quantiles")
   tryCatch(
-    quantile(x, pct, names = F, type = 3, na.rm = T),
-    error = function(e) rep(NA, length(pct)),
-    warning = function(w) rep(NA, length(pct))
+    quantile(
+      x,
+      pct,
+      names = F,
+      type = 3,
+      na.rm = T
+    ),
+    error = function(e)
+      rep(NA, length(pct)),
+    warning = function(w)
+      rep(NA, length(pct))
   )
 }
 
 # Quantile function for real values
 IOHanalyzer_env$C_quantile <- function(x, pct = NULL) {
-  if (is.null(pct)) pct <- getOption("IOHanalyzer.quantiles")
+  if (is.null(pct))
+    pct <- getOption("IOHanalyzer.quantiles")
   tryCatch(
     quantile(x, pct, names = F, na.rm = T),
-    error = function(e) rep(NA, length(pct)),
-    warning = function(w) rep(NA, length(pct))
+    error = function(e)
+      rep(NA, length(pct)),
+    warning = function(w)
+      rep(NA, length(pct))
   )
 }
 

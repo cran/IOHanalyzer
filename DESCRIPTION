@@ -1,7 +1,7 @@
 Package: IOHanalyzer
 Type: Package
 Title: Data Analysis Part of 'IOHprofiler'
-Version: 0.1.8.6
+Version: 0.1.8.10
 Maintainer: Diederick Vermetten <d.l.vermetten@liacs.leidenuniv.nl>
 Authors@R: c(
     person("Hao", "Wang", email = "h.wang@liacs.leidenuniv.nl", role = "aut", comment = c(ORCID = "0000-0002-4933-5181")),
@@ -21,8 +21,8 @@ URL: https://iohanalyzer.liacs.nl,
         https://github.com/IOHprofiler/IOHAnalyzer
 BugReports: https://github.com/IOHprofiler/IOHAnalyzer/issues
 Imports: magrittr, dplyr, data.table, ggplot2, plotly, colorspace,
-        colorRamps, RColorBrewer, shiny, reshape2, stringi, httr,
-        knitr, methods, rjson, eaf, viridis
+        RColorBrewer, shiny, reshape2, stringi, httr, knitr, methods,
+        rjson, eaf, viridis
 LinkingTo: Rcpp
 SystemRequirements: C++
 RoxygenNote: 7.2.3
@@ -32,11 +32,11 @@ Suggests: Rcpp, testthat, withr, ComplexHeatmap, grid, keyring,
         reticulate
 Depends: R (>= 2.10)
 NeedsCompilation: yes
-Packaged: 2023-12-04 10:18:31 UTC; diedi
+Packaged: 2024-03-01 12:06:46 UTC; diedi
 Author: Hao Wang [aut] (<https://orcid.org/0000-0002-4933-5181>),
   Diederick Vermetten [cre, aut]
     (<https://orcid.org/0000-0003-3040-7162>),
   Carola Doerr [aut] (<https://orcid.org/0000-0002-4981-3227>),
   Thomas Bäck [aut] (<https://orcid.org/0000-0001-6768-1478>)
 Repository: CRAN
-Date/Publication: 2023-12-04 14:30:07 UTC
+Date/Publication: 2024-03-01 12:52:37 UTC
