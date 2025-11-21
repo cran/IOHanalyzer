@@ -16,13 +16,14 @@
 #' @importFrom shiny req
 #' @importFrom stringi stri_detect_regex stri_detect_fixed stri_locate_all stri_replace
 #' @importFrom stringi stri_rand_strings stri_sub stri_replace_all_fixed
-#' @importFrom httr POST GET add_headers content authenticate
+#' @importFrom httr POST GET add_headers content authenticate timeout
 #' @importFrom reshape2 acast dcast
 #' @importFrom knitr kable
 #' @importFrom methods hasArg
 #' @importFrom rjson fromJSON
 #' @importFrom eaf eafs eafdiff
 #' @importFrom viridis viridis
+#' @importFrom rlang is_installed
 #' @useDynLib IOHanalyzer
 NULL
 # Ugly hack, but appears to be required to appease CRAN

@@ -340,6 +340,16 @@ body <- dashboardBody(
       )
     ),
 
+    tabItem(
+      tabName = 'BBOB Analysis',
+      fluidRow(
+        column(
+          width = 12,
+          ERT_BBOB_box(collapsed = F)
+        )
+      )
+    ),
+
     # General data overview ----------------------
     tabItem(
       tabName = 'overview',

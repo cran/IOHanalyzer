@@ -39,9 +39,10 @@ A cumulative difference plot.
 Plot the cumulative difference plot given a DataSetList.
 }
 \examples{
+if (rlang::is_installed("RVCompare")) {
 dsl
 dsl_sub <- subset(dsl, funcId == 1)
 target <- 15
-
 Plot.cumulative_difference_plot(dsl_sub, target, FALSE)
+}
 }

@@ -2,8 +2,8 @@
 % Please edit documentation in R/IOHanalyzer.R
 \docType{package}
 \name{IOHanalyzer}
-\alias{IOHanalyzer}
 \alias{IOHanalyzer-package}
+\alias{IOHanalyzer}
 \title{IOHanalyzer: Data Analysis Part of IOHprofiler}
 \description{
 The data analysis module for the Iterative Optimization Heuristics Profiler (IOHprofiler).

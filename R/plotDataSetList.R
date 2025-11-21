@@ -543,8 +543,10 @@ Plot.Comparison.Heatmap <-
 #'
 #' @return A graph showing the statistical significance between algorithms
 #' @export
-#' @examples
+#' @examples 
+#' if (rlang::is_installed("igraph")) {
 #' Plot.Stats.Significance_Graph(subset(dsl, funcId == 2), 16)
+#' }
 Plot.Stats.Significance_Graph <-
   function(dsList,
            ftarget,
@@ -1357,6 +1359,7 @@ Plot.Stats.Significance_Graph.DataSetList <-
     }
     p_matrix <-
       pairwise.test(dsList, ftarget, bootstrap.size, which)
+    p_matrix[is.na(p_matrix)] <- 1
     g <-
       igraph::graph_from_adjacency_matrix(p_matrix <= alpha, mode = 'directed', diag = F)
     lab.locs <-
@@ -2285,11 +2288,12 @@ Plot.Performviz <- function(DSC_rank_result) {
 #' @return A cumulative difference plot.
 #' @export
 #' @examples
+#' if (rlang::is_installed("RVCompare")) {
 #' dsl
 #' dsl_sub <- subset(dsl, funcId == 1)
 #' target <- 15
-#'
 #' Plot.cumulative_difference_plot(dsl_sub, target, FALSE)
+#' }
 Plot.cumulative_difference_plot <-
   function(dsList,
            runtime_or_target_value,

@@ -39,5 +39,7 @@ A graph showing the statistical significance between algorithms
 Plot a network graph showing the statistically different algorithms
 }
 \examples{
+if (rlang::is_installed("igraph")) {
 Plot.Stats.Significance_Graph(subset(dsl, funcId == 2), 16)
+}
 }

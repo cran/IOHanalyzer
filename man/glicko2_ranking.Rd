@@ -27,6 +27,8 @@ provided target (defaults to best achieved target). Whichever algorithm has the 
 runtime wins the game. Then, from these games, the glicko2-rating is determined.
 }
 \examples{
+if (rlang::is_installed("PlayerRatings")) {
 glicko2_ranking(dsl, nr_round = 25)
 glicko2_ranking(dsl, nr_round = 25, which = 'by_RT')
+}
 }

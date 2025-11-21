@@ -589,9 +589,11 @@ get_target_RT <- function(dsList) {
 #' @return A dataframe containing the glicko2-ratings and some additional info
 #'
 #' @export
-#' @examples
+#' @examples 
+#' if (rlang::is_installed("PlayerRatings")) {
 #' glicko2_ranking(dsl, nr_round = 25)
 #' glicko2_ranking(dsl, nr_round = 25, which = 'by_RT')
+#' }
 glicko2_ranking <-
   function(dsl,
            nr_rounds = 100,
@@ -1283,7 +1285,7 @@ get_ontology_var <-
     url <- paste0(url_base, url_appendix)
 
     status <- try({
-      resp <- GET(url, query = parameters_list)
+      resp <- GET(url, query = parameters_list, timeout(3))
       res <- content(resp)$results
     }, silent = TRUE)
 
@@ -1358,7 +1360,7 @@ get_ontology_data <-
 
 
     status <- try({
-      resp <- POST(url_base, body = parameters_list, encode = "form")
+      resp <- POST(url_base, body = parameters_list, encode = "form", timeout(3))
       results <- content(resp)
     }, silent = TRUE)
 

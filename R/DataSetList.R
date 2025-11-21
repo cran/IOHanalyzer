@@ -1936,9 +1936,10 @@ generate_data.Heatmaps <-
 #'
 #' @export
 #' @examples
-#'
+#' if (rlang::is_installed("RVCompare")) {
 #' dsl_sub <- subset(dsl, funcId == 1)
 #' generate_data.CDP(dsl_sub, 15, TRUE, nOfBootstrapSamples = 10)
+#' }
 generate_data.CDP <-
   function(dsList,
            runtime_or_target_value,
